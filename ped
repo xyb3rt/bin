@@ -1,0 +1,6 @@
+#!/bin/sh
+f="/tmp/ped.$$"
+cat >"$f"
+"${EDITOR:-ed}" "$f" </dev/tty >/dev/tty 2>&1
+cat "$f"
+rm -f "$f"

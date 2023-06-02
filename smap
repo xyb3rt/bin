@@ -1,0 +1,9 @@
+#!/bin/sh
+for pid; do
+	awk -v "pid=$pid" '
+		$1 == "Rss:" { rss += $2; }
+		$1 == "Pss:" { pss += $2; }
+		END {
+			printf("%d:\tRss: %d\tPss: %d\n", pid, rss, pss);
+		}' "/proc/$pid/smaps"
+done

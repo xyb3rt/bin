@@ -1,0 +1,3 @@
+#!/bin/sh -e
+mkdir -p build
+exec ${MAKE:-make} -C build -f ../Makefile -I .. srcdir=.. "$@"
