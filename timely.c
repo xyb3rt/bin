@@ -2,15 +2,10 @@
  * timely: Run command every time any file in current directory is written
  */
 #include "base.h"
-#include <arpa/inet.h>
 #include <limits.h>
 #include <poll.h>
 #include <sys/inotify.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
-struct sockaddr_in avaddr;
-const char *avbuf, *avpid;
 struct pollfd pollfd;
 
 void usage() {
@@ -28,20 +23,6 @@ void setup() {
 	}
 	pollfd.fd = inotifyfd;
 	pollfd.events = POLLIN;
-	avbuf = getenv("ACMEVIMBUF");
-	avpid = getenv("ACMEVIMPID");
-	char *avport = getenv("ACMEVIMPORT");
-	if (avbuf == NULL || avpid == NULL || avport == NULL) {
-		return;
-	}
-	char *end;
-	int port = strtol(avport, &end, 0);
-	if (*end != '\0') {
-		return;
-	}
-	avaddr.sin_family = AF_INET;
-	avaddr.sin_port = htons(port);
-	avaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 }
 
 void block() {
@@ -73,22 +54,12 @@ void drain() {
 }
 
 void clearbuf() {
-	static char msg[1024];
-	if (avaddr.sin_port == 0) {
-		return;
+	char *argv[] = {"acmevim", "-c", NULL, NULL};
+	argv[2] = getenv("ACMEVIMBUF");
+	if (argv[2] != NULL && argv[2][0] != '\0') {
+		int status;
+		call(argv, NULL, &status);
 	}
-	int sockfd = socket(PF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1) {
-		return;
-	}
-	if (connect(sockfd, (struct sockaddr *)&avaddr, sizeof(avaddr)) == -1) {
-		goto end;
-	}
-	size_t len = snprintf(msg, sizeof(msg), "%s\x1f%u\x1f"
-	                      "clear\x1f%s\x1e", avpid, getpid(), avbuf);
-	send(sockfd, msg, len, 0);
-end:
-	close(sockfd);
 }
 
 int main(int argc, char *argv[]) {
