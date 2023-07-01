@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 		fprintf(tmpfs, "%s\n", argv[i]);
 	}
 	fclose(tmpfs);
-	if (ecall(editor, NULL) != 0) {
+	if (call(editor) != 0) {
 		return EXIT_FAILURE;
 	}
 	if ((tmpfs = fopen(tmppath, "r")) == NULL) {

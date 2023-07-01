@@ -47,29 +47,20 @@ static char *estrdup(const char *s) {
 	return p;
 }
 
-static int call(char *const argv[], int fd[3], int *status) {
-	int err = 0;
+static int call(char *const argv[]) {
+	int status = 0;
 	pid_t pid = fork();
-	if (pid < 0) {
-		err = -1;
-	} else if (pid > 0) {
-		while ((err = waitpid(pid, status, 0)) == -1 && errno == EINTR);
-	} else {
-		if (fd != NULL) {
-			dup2(fd[0], 0);
-			dup2(fd[1], 1);
-			dup2(fd[2], 2);
-		}
+	if (pid == -1) {
+		error(EXIT_FAILURE, errno, "exec: %s", argv[0]);
+	}
+	if (pid == 0) {
 		execvp(argv[0], argv);
 		error(EXIT_FAILURE, errno, "exec: %s", argv[0]);
 	}
-	return err;
-}
-
-static int ecall(char *const argv[], int fd[3]) {
-	int status;
-	if (call(argv, fd, &status) == -1) {
-		error(EXIT_FAILURE, errno, "call: %s", argv[0]);
+	while (waitpid(pid, &status, 0) == -1) {
+		if (errno != EINTR) {
+			error(EXIT_FAILURE, errno, "wait: %s", argv[0]);
+		}
 	}
 	return status;
 }

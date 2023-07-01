@@ -57,8 +57,7 @@ void clearbuf() {
 	char *argv[] = {"acmevim", "-c", NULL, NULL};
 	argv[2] = getenv("ACMEVIMBUF");
 	if (argv[2] != NULL && argv[2][0] != '\0') {
-		int status;
-		call(argv, NULL, &status);
+		call(argv);
 	}
 }
 
