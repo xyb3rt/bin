@@ -4,12 +4,13 @@
 #include "base.h"
 #include <sys/stat.h>
 
+struct buf {
+	char *d;
+	size_t size;
+};
+
 int tmpfd = -1;
 char tmppath[] = "/tmp/fned.XXXXXX";
-
-void usage() {
-	fprintf(stderr, "usage: %s PATH...\n", strbsnm(argv0));
-}
 
 void cleanup() {
 	if (tmpfd >= 0) {
@@ -64,39 +65,41 @@ int rm(const char *path) {
 	}
 }
 
+ssize_t readline(struct buf *buf, FILE *f) {
+	ssize_t n = getline(&buf->d, &buf->size, f);
+	if (n > 0 && buf->d[n - 1] == '\n') {
+		buf->d[--n] = '\0';
+	}
+	return n;
+}
+
 int main(int argc, char *argv[]) {
 	int i;
-	FILE *tmpfs;
+	struct buf buf;
+	FILE *f, *tmpf;
 	char *editor[] = { NULL, tmppath, NULL };
 	char *dst = NULL, *s, *src;
-	size_t n, size = 0;
 	argv0 = argv[0];
 	atexit(cleanup);
-	if (argc == 1) {
-		usage();
-		return EXIT_FAILURE;
-	}
 	if ((editor[0] = getenv("EDITOR")) == NULL || *editor[0] == '\0') {
 		error(EXIT_FAILURE, 0, "EDITOR not set");
 	}
-	if ((tmpfd = mkstemp(tmppath)) < 0 || (tmpfs = fdopen(tmpfd, "r+")) == NULL) {
+	if ((tmpfd = mkstemp(tmppath)) < 0 || (tmpf = fdopen(tmpfd, "r+")) == NULL) {
 		error(EXIT_FAILURE, errno, "%s", tmppath);
 	}
 	for (i = 1; i < argc; i++) {
-		fprintf(tmpfs, "%s\n", argv[i]);
+		fprintf(tmpf, "%s\n", argv[i]);
 	}
-	fclose(tmpfs);
+	fclose(tmpf);
 	if (call(editor) != 0) {
 		return EXIT_FAILURE;
 	}
-	if ((tmpfs = fopen(tmppath, "r")) == NULL) {
+	if ((tmpf = fopen(tmppath, "r")) == NULL) {
 		error(EXIT_FAILURE, errno, "%s", tmppath);
 	}
-	for (i = 1; i < argc && (n = getline(&dst, &size, tmpfs)) != -1; i++) {
+	for (i = 1; i < argc && readline(&buf, tmpf) != -1; i++) {
+		dst = buf.d;
 		src = argv[i];
-		if (dst[n-1] == '\n') {
-			dst[--n] = '\0';
-		}
 		if (strcmp(src, dst) == 0) {
 			continue;
 		}
@@ -122,6 +125,25 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+	while (readline(&buf, tmpf) != -1) {
+		dst = buf.d;
+		if ((s = strrchr(dst, '/')) != NULL) {
+			*s = '\0';
+			if (mkdirs(dst) == -1) {
+				error(0, errno, "%s/%s: %s", dst, s + 1, dst);
+				continue;
+			}
+			if (s[1] == '\0') {
+				continue;
+			}
+			*s = '/';
+		}
+		if ((f = fopen(dst, "a")) == NULL) {
+			error(0, errno, "%s", dst);
+			continue;
+		}
+		fclose(f);
+	}
 	for (i = 1; i < argc; i++) {
 		src = argv[i];
 		if ((s = strrchr(src, '/')) != NULL) {
@@ -129,6 +151,6 @@ int main(int argc, char *argv[]) {
 			rmdirs(src);
 		}
 	}
-	fclose(tmpfs);
+	fclose(tmpf);
 	return EXIT_SUCCESS;
 }
