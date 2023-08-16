@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/bin/sh -e
 f="/tmp/ped.$$"
+cleanup() {
+	rm -f "$f"
+}
+. trap.sh
 cat >"$f"
 (
 	[ -t 2 ] && exec </dev/tty >/dev/tty
 	exec ${EDITOR:-ed} "$f"
 )
 cat "$f"
-rm -f "$f"
