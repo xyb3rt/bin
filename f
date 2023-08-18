@@ -1,2 +1,2 @@
 #!/bin/sh
-rg --files | rg -F "$1"
+rg --files -u | rg -F "$1"

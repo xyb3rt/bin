@@ -1,2 +1,2 @@
 #!/bin/sh
-rg --files | rg -Fw "$1"
+rg --files -u | rg -Fw "$1"
