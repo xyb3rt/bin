@@ -1,2 +1,2 @@
 #!/bin/sh
-rg --files -u | rg -F "$1"
+find . | sed 's;^\./;;' | rg "$1[^/]*$" | sort

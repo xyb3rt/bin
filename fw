@@ -1,2 +1,2 @@
 #!/bin/sh
-rg --files -u | rg -Fw "$1"
+exec f "\b$1\b"
