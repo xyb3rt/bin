@@ -1,5 +1,5 @@
 /*
- * timely: Run command every time any file in current directory is written
+ * timely: Run command every time any file in given directories is written
  */
 #include "base.h"
 #include <limits.h>
@@ -17,12 +17,15 @@ void setup() {
 	if (inotifyfd == -1) {
 		error(EXIT_FAILURE, errno, "inotify_init");
 	}
-	int watchfd = inotify_add_watch(inotifyfd, ".", IN_CLOSE_WRITE);
-	if (watchfd == -1) {
-		error(EXIT_FAILURE, errno, "inotify_add_watch");
-	}
 	pollfd.fd = inotifyfd;
 	pollfd.events = POLLIN;
+}
+
+void watch(const char *path) {
+	int watchfd = inotify_add_watch(pollfd.fd, path, IN_CLOSE_WRITE);
+	if (watchfd == -1) {
+		error(EXIT_FAILURE, errno, "inotify_add_watch: %s", path);
+	}
 }
 
 void block() {
@@ -44,9 +47,11 @@ void drain() {
 			}
 			error(EXIT_FAILURE, errno, "read");
 		}
-		// Wait 100ms for more notifications because there is
-		// typically more than one and the read loop above hits
-		// EAGAIN between them.
+		/*
+		 * Wait 100ms for more notifications because there is
+		 * typically more than one and the read call above hits
+		 * EAGAIN between them.
+		 */
 		if (poll(&pollfd, 1, 100) == 0) {
 			break;
 		}
@@ -63,11 +68,16 @@ void clearbuf() {
 
 int main(int argc, char *argv[]) {
 	argv0 = argv[0];
-	if (argc != 2) {
+	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
 	setup();
+	if (argc == 2) {
+		watch(".");
+	} else for (int i = 2; i < argc; i++) {
+		watch(argv[i]);
+	}
 	system(argv[1]);
 	drain();
 	for (;;) {
