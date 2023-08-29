@@ -4,6 +4,7 @@
 #include "base.h"
 #include "vec.h"
 #include <dirent.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
 
@@ -163,8 +164,19 @@ void writefile(const char *path, const strvec lines) {
 
 void editfile(char *path) {
 	char *argv[] = {editor, path, NULL};
-	if (call(argv) != 0) {
+	int fds[] = {0, 1, 2};
+	int tty = -1;
+	if (!isatty(0) || !isatty(1)) {
+		tty = open("/dev/tty", O_RDWR);
+		if (tty != -1) {
+			fds[0] = fds[1] = tty;
+		}
+	}
+	if (call(argv, fds) != 0) {
 		error(EXIT_FAILURE, 0, "aborting");
+	}
+	if (tty != -1) {
+		close(tty);
 	}
 }
 
@@ -200,6 +212,8 @@ int main(int argc, char *argv[]) {
 	strvec sv;
 	if (argc < 2) {
 		sv = ls(".");
+	} else if (argc == 2 && strcmp(argv[1], "-") == 0) {
+		sv = readlines(stdin);
 	} else {
 		sv = vec_new();
 		for (int i = 1; i < argc; i++) {
