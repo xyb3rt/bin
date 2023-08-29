@@ -3,6 +3,7 @@
  */
 #include "base.h"
 #include "vec.h"
+#include <dirent.h>
 #include <sys/stat.h>
 
 typedef char **strvec;
@@ -78,6 +79,34 @@ int rm(const char *path) {
 	}
 }
 
+int fncmp(const void *a, const void *b) {
+	return strcoll(*(const char **)a, *(const char **)b);
+}
+
+strvec ls(const char *path) {
+	strvec entries = vec_new();
+	DIR *d = opendir(path);
+	if (d == NULL) {
+		error(EXIT_FAILURE, errno, "%s", path);
+	}
+	for (;;) {
+		errno = 0;
+		struct dirent *e = readdir(d);
+		if (e == NULL) {
+			if (errno != 0) {
+				error(EXIT_FAILURE, errno, "%s", path);
+			}
+			break;
+		}
+		if (e->d_name[0] != '.') {
+			vec_push(&entries, estrdup(e->d_name));
+		}
+	}
+	closedir(d);
+	qsort(entries, vec_len(&entries), sizeof(entries[0]), fncmp);
+	return entries;
+}
+
 strvec readlines(FILE *f) {
 	char *buf = NULL;
 	size_t size = 0;
@@ -148,9 +177,14 @@ void init(void) {
 int main(int argc, char *argv[]) {
 	argv0 = argv[0];
 	init();
-	strvec sv = vec_new();
-	for (int i = 1; i < argc; i++) {
-		vec_push(&sv, argv[i]);
+	strvec sv;
+	if (argc < 2) {
+		sv = ls(".");
+	} else {
+		sv = vec_new();
+		for (int i = 1; i < argc; i++) {
+			vec_push(&sv, argv[i]);
+		}
 	}
 	writefile(tmp, sv);
 	editfile(tmp);
