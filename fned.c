@@ -2,25 +2,27 @@
  * fned: Rename files using $EDITOR
  */
 #include "base.h"
+#include "vec.h"
 #include <sys/stat.h>
 
-struct buf {
-	char *d;
-	size_t size;
-};
+typedef char **strvec;
 
-int tmpfd = -1;
-char tmppath[] = "/tmp/fned.XXXXXX";
+char *editor;
+char *tmp;
 
-void cleanup() {
-	if (tmpfd >= 0) {
-		unlink(tmppath);
+void cleanup(void) {
+	if (tmp != NULL) {
+		unlink(tmp);
 	}
+}
+
+int isdir(const char *path) {
+	struct stat st;
+	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
 int mkdirs(char *path) {
 	char c, *s = path;
-	struct stat st;
 	while (*s != '\0') {
 		if (*s == '/') {
 			s++;
@@ -29,10 +31,8 @@ int mkdirs(char *path) {
 		for (; *s != '\0' && *s != '/'; s++);
 		c = *s;
 		*s = '\0';
-		if (mkdir(path, 0755) == -1) {
-			if (errno != EEXIST || stat(path, &st) == -1 || !S_ISDIR(st.st_mode)) {
-				return -1;
-			}
+		if (!isdir(path) && mkdir(path, 0755) == -1) {
+			return -1;
 		}
 		*s = c;
 	}
@@ -56,101 +56,149 @@ int rmdirs(char *path) {
 	return 0;
 }
 
+char *dirop(char *path, int (*op)(char *)) {
+	char *sep = strrchr(path, '/');
+	if (sep == NULL) {
+		return path;
+	}
+	*sep = '\0';
+	int res = op(path);
+	*sep = '/';
+	if (res == -1) {
+		return NULL;
+	}
+	return sep + 1;
+}
+
 int rm(const char *path) {
-	struct stat st;
-	if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+	if (isdir(path)) {
 		return rmdir(path);
 	} else {
 		return unlink(path);
 	}
 }
 
-ssize_t readline(struct buf *buf, FILE *f) {
-	ssize_t n = getline(&buf->d, &buf->size, f);
-	if (n > 0 && buf->d[n - 1] == '\n') {
-		buf->d[--n] = '\0';
+strvec readlines(FILE *f) {
+	char *buf = NULL;
+	size_t size = 0;
+	strvec lines = vec_new();
+	for (;;) {
+		ssize_t len = getline(&buf, &size, f);
+		if (len == -1) {
+			if (ferror(f)) {
+				error(EXIT_FAILURE, errno, "getline");
+			}
+			break;
+		}
+		if (len > 0 && buf[len - 1] == '\n') {
+			buf[--len] = '\0';
+		}
+		vec_push(&lines, estrdup(buf));
 	}
-	return n;
+	return lines;
+}
+
+strvec readfile(const char *path) {
+	FILE *f = fopen(path, "r");
+	if (f == NULL) {
+		error(EXIT_FAILURE, errno, "%s", path);
+	}
+	strvec lines = readlines(f);
+	fclose(f);
+	return lines;
+}
+
+void writefile(const char *path, const strvec lines) {
+	FILE *f = fopen(path, "w");
+	if (f == NULL) {
+		error(EXIT_FAILURE, errno, "%s", path);
+	}
+	for (size_t i = 0, n = vec_len(&lines); i < n; i++) {
+		fprintf(f, "%s\n", lines[i]);
+	}
+	fclose(f);
+}
+
+void editfile(char *path) {
+	char *argv[] = {editor, path, NULL};
+	if (call(argv) != 0) {
+		error(EXIT_FAILURE, 0, "aborting");
+	}
+}
+
+char *mktmp(void) {
+	char tp[] = "/tmp/fned.XXXXXX";
+	int fd = mkstemp(tp);
+	if (fd == -1) {
+		error(EXIT_FAILURE, errno, "mkstemp: %s", tp);
+	}
+	close(fd);
+	return estrdup(tp);
+}
+
+void init(void) {
+	editor = getenv("EDITOR");
+	if (editor == NULL || editor[0] == '\0') {
+		error(EXIT_FAILURE, 0, "EDITOR not set");
+	}
+	atexit(cleanup);
+	tmp = mktmp();
 }
 
 int main(int argc, char *argv[]) {
-	int i;
-	struct buf buf;
-	FILE *f, *tmpf;
-	char *editor[] = { NULL, tmppath, NULL };
-	char *dst = NULL, *s, *src;
 	argv0 = argv[0];
-	atexit(cleanup);
-	if ((editor[0] = getenv("EDITOR")) == NULL || *editor[0] == '\0') {
-		error(EXIT_FAILURE, 0, "EDITOR not set");
+	init();
+	strvec sv = vec_new();
+	for (int i = 1; i < argc; i++) {
+		vec_push(&sv, argv[i]);
 	}
-	if ((tmpfd = mkstemp(tmppath)) < 0 || (tmpf = fdopen(tmpfd, "r+")) == NULL) {
-		error(EXIT_FAILURE, errno, "%s", tmppath);
-	}
-	for (i = 1; i < argc; i++) {
-		fprintf(tmpf, "%s\n", argv[i]);
-	}
-	fclose(tmpf);
-	if (call(editor) != 0) {
-		return EXIT_FAILURE;
-	}
-	if ((tmpf = fopen(tmppath, "r")) == NULL) {
-		error(EXIT_FAILURE, errno, "%s", tmppath);
-	}
-	for (i = 1; i < argc && readline(&buf, tmpf) != -1; i++) {
-		dst = buf.d;
-		src = argv[i];
-		if (strcmp(src, dst) == 0) {
+	writefile(tmp, sv);
+	editfile(tmp);
+	strvec dv = readfile(tmp);
+	size_t dn = vec_len(&dv);
+	size_t sn = vec_len(&sv);
+	int err = 0;
+	for (size_t i = 0; i < dn || i < sn; i++) {
+		char *dst = i < dn ? dv[i] : NULL;
+		char *src = i < sn ? sv[i] : NULL;
+		if (dst != NULL && src != NULL && strcmp(dst, src) == 0) {
+			continue;
+		}
+		if (dst == NULL || dst[0] == '\0') {
+			if (rm(src) == -1) {
+				err = 1;
+				error(0, errno, "%s", src);
+			}
 			continue;
 		}
 		if (access(dst, F_OK) == 0) {
-			error(0, EEXIST, "%s -> %s", src, dst);
+			err = 1;
+			error(0, EEXIST, "%s", dst);
 			continue;
 		}
-		if ((s = strrchr(dst, '/')) != NULL) {
-			*s = '\0';
-			if (mkdirs(dst) == -1) {
-				error(0, errno, "%s -> %s/%s: %s", src, dst, s + 1, dst);
-				continue;
-			}
-			*s = '/';
-		}
-		if (dst[0] != '\0') {
-			if (rename(src, dst) == -1) {
-				error(0, errno, "%s -> %s", src, dst);
-			}
-		} else {
-			if (rm(src) == -1) {
-				error(0, errno, "%s", src);
-			}
-		}
-	}
-	while (readline(&buf, tmpf) != -1) {
-		dst = buf.d;
-		if ((s = strrchr(dst, '/')) != NULL) {
-			*s = '\0';
-			if (mkdirs(dst) == -1) {
-				error(0, errno, "%s/%s: %s", dst, s + 1, dst);
-				continue;
-			}
-			if (s[1] == '\0') {
-				continue;
-			}
-			*s = '/';
-		}
-		if ((f = fopen(dst, "a")) == NULL) {
+		char *base = dirop(dst, &mkdirs);
+		if (base == NULL) {
+			err = 1;
 			error(0, errno, "%s", dst);
 			continue;
 		}
-		fclose(f);
-	}
-	for (i = 1; i < argc; i++) {
-		src = argv[i];
-		if ((s = strrchr(src, '/')) != NULL) {
-			*s = '\0';
-			rmdirs(src);
+		if (src != NULL) {
+			if (rename(src, dst) == -1) {
+				err = 1;
+				error(0, errno, "rename: %s, %s", src, dst);
+			}
+		} else if (base[0] != '\0') {
+			FILE *f = fopen(dst, "a");
+			if (f == NULL) {
+				err = 1;
+				error(0, errno, "%s", dst);
+			} else {
+				fclose(f);
+			}
 		}
 	}
-	fclose(tmpf);
-	return EXIT_SUCCESS;
+	for (size_t i = 0; i < sn; i++) {
+		dirop(sv[i], &rmdirs);
+	}
+	return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
