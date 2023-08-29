@@ -4,6 +4,7 @@
 #include "base.h"
 #include "vec.h"
 #include <dirent.h>
+#include <signal.h>
 #include <sys/stat.h>
 
 typedef char **strvec;
@@ -15,6 +16,18 @@ void cleanup(void) {
 	if (tmp != NULL) {
 		unlink(tmp);
 	}
+}
+
+void sigsetup(int sig, void (*handler)(int)) {
+	struct sigaction sa = {.sa_handler = handler};
+	sigaction(sig, &sa, NULL);
+}
+
+void sighandle(int sig) {
+	cleanup();
+	sigsetup(sig, SIG_DFL);
+	kill(getpid(), sig);
+	_exit(1);
 }
 
 int isdir(const char *path) {
@@ -171,6 +184,13 @@ void init(void) {
 		error(EXIT_FAILURE, 0, "EDITOR not set");
 	}
 	atexit(cleanup);
+	sigsetup(SIGHUP, sighandle);
+	sigsetup(SIGINT, sighandle);
+	sigsetup(SIGQUIT, sighandle);
+	sigsetup(SIGABRT, sighandle);
+	sigsetup(SIGTERM, sighandle);
+	sigsetup(SIGUSR1, sighandle);
+	sigsetup(SIGUSR2, sighandle);
 	tmp = mktmp();
 }
 
