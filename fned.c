@@ -77,11 +77,10 @@ char *dirop(char *path, int (*op)(char *)) {
 		return path;
 	}
 	*sep = '\0';
-	int res = op(path);
-	*sep = '/';
-	if (res == -1) {
+	if (op(path) == -1) {
 		return NULL;
 	}
+	*sep = '/';
 	return sep + 1;
 }
 
