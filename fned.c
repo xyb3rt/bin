@@ -27,7 +27,7 @@ void sigsetup(int sig, void (*handler)(int)) {
 void sighandle(int sig) {
 	cleanup();
 	sigsetup(sig, SIG_DFL);
-	kill(getpid(), sig);
+	raise(sig);
 	_exit(1);
 }
 
