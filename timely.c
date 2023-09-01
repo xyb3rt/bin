@@ -1,7 +1,7 @@
 /*
  * timely: Run command every time any file in given directories is written
  */
-#include "base.h"
+#include "indispensbl/call.h"
 #include <limits.h>
 #include <poll.h>
 #include <sys/inotify.h>
@@ -15,7 +15,7 @@ void usage() {
 void setup() {
 	int inotifyfd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	if (inotifyfd == -1) {
-		error(EXIT_FAILURE, errno, "inotify_init");
+		fail(errno, "inotify_init");
 	}
 	pollfd.fd = inotifyfd;
 	pollfd.events = POLLIN;
@@ -24,14 +24,14 @@ void setup() {
 void watch(const char *path) {
 	int watchfd = inotify_add_watch(pollfd.fd, path, IN_CLOSE_WRITE);
 	if (watchfd == -1) {
-		error(EXIT_FAILURE, errno, "inotify_add_watch: %s", path);
+		fail(errno, "inotify_add_watch: %s", path);
 	}
 }
 
 void block() {
 	while (poll(&pollfd, 1, -1) == -1) {
 		if (errno != EINTR) {
-			error(EXIT_FAILURE, errno, "poll");
+			fail(errno, "poll");
 		}
 	}
 }
@@ -45,7 +45,7 @@ void drain() {
 			} else if (errno == EINTR) {
 				continue;
 			}
-			error(EXIT_FAILURE, errno, "read");
+			fail(errno, "read");
 		}
 		/*
 		 * Wait 100ms for more notifications because there is

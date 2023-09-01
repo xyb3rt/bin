@@ -1,8 +1,8 @@
 /*
  * fned: Rename files using $EDITOR
  */
-#include "base.h"
-#include "vec.h"
+#include "indispensbl/call.h"
+#include "indispensbl/vec.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -101,19 +101,19 @@ strvec ls(const char *path) {
 	strvec entries = vec_new();
 	DIR *d = opendir(path);
 	if (d == NULL) {
-		error(EXIT_FAILURE, errno, "%s", path);
+		fail(errno, "%s", path);
 	}
 	for (;;) {
 		errno = 0;
 		struct dirent *e = readdir(d);
 		if (e == NULL) {
 			if (errno != 0) {
-				error(EXIT_FAILURE, errno, "%s", path);
+				fail(errno, "%s", path);
 			}
 			break;
 		}
 		if (e->d_name[0] != '.') {
-			vec_push(&entries, estrdup(e->d_name));
+			vec_push(&entries, xstrdup(e->d_name));
 		}
 	}
 	closedir(d);
@@ -129,14 +129,14 @@ strvec readlines(FILE *f) {
 		ssize_t len = getline(&buf, &size, f);
 		if (len == -1) {
 			if (ferror(f)) {
-				error(EXIT_FAILURE, errno, "getline");
+				fail(errno, "getline");
 			}
 			break;
 		}
 		if (len > 0 && buf[len - 1] == '\n') {
 			buf[--len] = '\0';
 		}
-		vec_push(&lines, estrdup(buf));
+		vec_push(&lines, xstrdup(buf));
 	}
 	return lines;
 }
@@ -144,7 +144,7 @@ strvec readlines(FILE *f) {
 strvec readfile(const char *path) {
 	FILE *f = fopen(path, "r");
 	if (f == NULL) {
-		error(EXIT_FAILURE, errno, "%s", path);
+		fail(errno, "%s", path);
 	}
 	strvec lines = readlines(f);
 	fclose(f);
@@ -154,7 +154,7 @@ strvec readfile(const char *path) {
 void writefile(const char *path, const strvec lines) {
 	FILE *f = fopen(path, "w");
 	if (f == NULL) {
-		error(EXIT_FAILURE, errno, "%s", path);
+		fail(errno, "%s", path);
 	}
 	for (size_t i = 0, n = vec_len(&lines); i < n; i++) {
 		fprintf(f, "%s\n", lines[i]);
@@ -173,7 +173,7 @@ void editfile(char *path) {
 		}
 	}
 	if (call(argv, fds) != 0) {
-		error(EXIT_FAILURE, 0, "aborting");
+		fail(0, "Aborting");
 	}
 	if (tty != -1) {
 		close(tty);
@@ -184,16 +184,16 @@ char *mktmp(void) {
 	char tp[] = "/tmp/fned.XXXXXX";
 	int fd = mkstemp(tp);
 	if (fd == -1) {
-		error(EXIT_FAILURE, errno, "mkstemp: %s", tp);
+		fail(errno, "mkstemp: %s", tp);
 	}
 	close(fd);
-	return estrdup(tp);
+	return xstrdup(tp);
 }
 
 void init(void) {
 	editor = getenv("EDITOR");
 	if (editor == NULL || editor[0] == '\0') {
-		error(EXIT_FAILURE, 0, "EDITOR not set");
+		fail(EINVAL, "EDITOR");
 	}
 	atexit(cleanup);
 	sigsetup(SIGHUP, sighandle);
@@ -235,31 +235,31 @@ int main(int argc, char *argv[]) {
 		if (dst == NULL || dst[0] == '\0') {
 			if (rm(src) == -1) {
 				err = 1;
-				error(0, errno, "%s", src);
+				warn(errno, "%s", src);
 			}
 			continue;
 		}
 		if (access(dst, F_OK) == 0) {
 			err = 1;
-			error(0, EEXIST, "%s", dst);
+			warn(EEXIST, "%s", dst);
 			continue;
 		}
 		char *base = dirop(dst, &mkdirs);
 		if (base == NULL) {
 			err = 1;
-			error(0, errno, "%s", dst);
+			warn(errno, "%s", dst);
 			continue;
 		}
 		if (src != NULL) {
 			if (rename(src, dst) == -1) {
 				err = 1;
-				error(0, errno, "rename: %s, %s", src, dst);
+				warn(errno, "rename: %s, %s", src, dst);
 			}
 		} else if (base[0] != '\0') {
 			FILE *f = fopen(dst, "a");
 			if (f == NULL) {
 				err = 1;
-				error(0, errno, "%s", dst);
+				warn(errno, "%s", dst);
 			} else {
 				fclose(f);
 			}
