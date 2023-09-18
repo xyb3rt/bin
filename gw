@@ -1,2 +1,2 @@
 #!/bin/sh
-exec rg -Hnw --no-heading "$@"
+exec g -w "$@"
