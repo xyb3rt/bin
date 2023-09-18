@@ -1,2 +1,4 @@
-#!/bin/sh
-exec f "\b$1\b"
+#!/bin/sh -e
+p="$1"
+shift
+exec f "\b$p\b" "$@"

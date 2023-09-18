@@ -1,2 +1,5 @@
-#!/bin/sh
-find . | sed 's;^\./;;' | rg "$1[^/]*$" | sort
+#!/bin/sh -e
+p="$1"
+shift
+[ $# -eq 0 ] && set .
+find "$@" | sed 's;^\./;;' | rg "$p[^/]*$" | sort
