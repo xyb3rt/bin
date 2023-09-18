@@ -2,4 +2,4 @@
 p="$1"
 shift
 [ $# -eq 0 ] && set .
-find "$@" | sed 's;^\./;;' | rg "$p[^/]*$" | sort
+find "$@" | sed 's;^\./;;' | rg --smart-case "$p[^/]*$" | sort

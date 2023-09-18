@@ -1,5 +1,5 @@
 #!/bin/sh
-rg -Hn --heading --sort path "$@" | awk -F '^' '
+rg -Hn --heading --smart-case --sort path "$@" | awk -F '^' '
 	NR == 1 && ENVIRON["ACMEVIMID"] != "" {
 		print ""
 	}
