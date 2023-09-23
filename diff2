@@ -1,2 +1,0 @@
-#!/bin/sh
-exec diff -u "$1" -
