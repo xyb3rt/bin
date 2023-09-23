@@ -1,2 +1,9 @@
-#!/bin/sed -f
-s/^/    /
+#!/usr/bin/awk -f
+/^[[:space:]]*$/ {
+	print ""
+	next
+}
+{
+	n = match($0, /[^ ]/)
+	printf("%*s%s\n", int((n + 3) / 4) * 4, "", substr($0, n))
+}
