@@ -1,0 +1,11 @@
+#!/bin/sh -e
+s="$1"
+shift
+(
+	s="$(echo "$s" | tr '[:upper:]' '[:lower:]')"
+	case "$s" in
+	q*) ;;
+	*) s="q$s" ;;
+	esac
+	exec xdg-open "https://doc.qt.io/qt-5/$s.html" >/dev/null 2>&1
+) &
