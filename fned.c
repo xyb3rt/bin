@@ -120,6 +120,12 @@ strvec ls(const char *path) {
 	return entries;
 }
 
+int redirected(void) {
+	struct stat st;
+	return fstat(0, &st) == 0 && (S_ISFIFO(st.st_mode) ||
+		S_ISREG(st.st_mode) || S_ISSOCK(st.st_mode));
+}
+
 strvec readlines(FILE *f) {
 	char *buf = NULL;
 	size_t size = 0;
@@ -209,15 +215,15 @@ int main(int argc, char *argv[]) {
 	argv0 = argv[0];
 	init();
 	strvec sv;
-	if (argc < 2) {
-		sv = ls(".");
-	} else if (argc == 2 && strcmp(argv[1], "-") == 0) {
-		sv = readlines(stdin);
-	} else {
+	if (argc > 1) {
 		sv = vec_new();
 		for (int i = 1; i < argc; i++) {
 			vec_push(&sv, argv[i]);
 		}
+	} else if (redirected()) {
+		sv = readlines(stdin);
+	} else {
+		sv = ls(".");
 	}
 	writefile(tmp, sv);
 	editfile(tmp);
