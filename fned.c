@@ -231,14 +231,14 @@ int main(int argc, char *argv[]) {
 	size_t dn = vec_len(&dv);
 	size_t sn = vec_len(&sv);
 	int err = 0;
-	for (size_t i = 0; i < dn || i < sn; i++) {
-		char *dst = i < dn ? dv[i] : NULL;
+	for (size_t i = 0; i < dn; i++) {
+		char *dst = dv[i];
 		char *src = i < sn ? sv[i] : NULL;
-		if (dst != NULL && src != NULL && strcmp(dst, src) == 0) {
+		if (src != NULL && strcmp(src, dst) == 0) {
 			continue;
 		}
-		if (dst == NULL || dst[0] == '\0') {
-			if (rm(src) == -1) {
+		if (dst[0] == '\0') {
+			if (src != NULL && rm(src) == -1) {
 				err = 1;
 				warn(errno, "%s", src);
 			}
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-	for (size_t i = 0; i < sn; i++) {
+	for (size_t i = 0, n = dn < sn ? dn : sn; i < n; i++) {
 		dirop(sv[i], &rmdirs);
 	}
 	return err ? EXIT_FAILURE : EXIT_SUCCESS;
