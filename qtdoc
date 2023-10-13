@@ -1,11 +1,12 @@
 #!/bin/sh -e
 s="$1"
 shift
-(
-	s="$(echo "$s" | tr '[:upper:]' '[:lower:]')"
-	case "$s" in
-	q*) ;;
-	*) s="q$s" ;;
-	esac
-	exec xdg-open "https://doc.qt.io/qt-5/$s.html" >/dev/null 2>&1
-) &
+doc="$HOME/.local/Qt/Docs/Qt-5.15.2"
+url="https://doc.qt.io/qt-5"
+case "$s" in
+[Qq]*) ;;
+*) s="*-$s" ;;
+esac
+find "$doc" -iname "$s.html" | while IFS='' read -r file; do
+	xdg-open "$url/${file##*/}" >/dev/null 2>&1
+done &
