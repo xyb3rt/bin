@@ -100,14 +100,14 @@ strvec ls(const char *path) {
 	strvec entries = vec_new();
 	DIR *d = opendir(path);
 	if (d == NULL) {
-		fail(errno, "%s", path);
+		error(EXIT_FAILURE, errno, "%s", path);
 	}
 	for (;;) {
 		errno = 0;
 		struct dirent *e = readdir(d);
 		if (e == NULL) {
 			if (errno != 0) {
-				fail(errno, "%s", path);
+				error(EXIT_FAILURE, errno, "%s", path);
 			}
 			break;
 		}
@@ -134,7 +134,7 @@ strvec readlines(FILE *f) {
 		ssize_t len = getline(&buf, &size, f);
 		if (len == -1) {
 			if (ferror(f)) {
-				fail(errno, "getline");
+				error(EXIT_FAILURE, errno, "getline");
 			}
 			break;
 		}
@@ -149,7 +149,7 @@ strvec readlines(FILE *f) {
 strvec readfile(const char *path) {
 	FILE *f = fopen(path, "r");
 	if (f == NULL) {
-		fail(errno, "%s", path);
+		error(EXIT_FAILURE, errno, "%s", path);
 	}
 	strvec lines = readlines(f);
 	fclose(f);
@@ -159,7 +159,7 @@ strvec readfile(const char *path) {
 void writefile(const char *path, const strvec lines) {
 	FILE *f = fopen(path, "w");
 	if (f == NULL) {
-		fail(errno, "%s", path);
+		error(EXIT_FAILURE, errno, "%s", path);
 	}
 	for (size_t i = 0, n = vec_len(&lines); i < n; i++) {
 		fprintf(f, "%s\n", lines[i]);
@@ -178,7 +178,7 @@ void editfile(char *path) {
 		}
 	}
 	if (call(argv, fds) != 0) {
-		fail(0, "Aborting");
+		error(EXIT_FAILURE, 0, "Aborting");
 	}
 	if (tty != -1) {
 		close(tty);
@@ -189,7 +189,7 @@ char *mktmp(void) {
 	char tp[] = "/tmp/fned.XXXXXX";
 	int fd = mkstemp(tp);
 	if (fd == -1) {
-		fail(errno, "mkstemp: %s", tp);
+		error(EXIT_FAILURE, errno, "mkstemp: %s", tp);
 	}
 	close(fd);
 	return xstrdup(tp);
@@ -198,7 +198,7 @@ char *mktmp(void) {
 void init(void) {
 	editor = getenv("EDITOR");
 	if (editor == NULL || editor[0] == '\0') {
-		fail(EINVAL, "EDITOR");
+		error(EXIT_FAILURE, EINVAL, "EDITOR");
 	}
 	atexit(cleanup);
 	sigsetup(SIGHUP, sighandle);
@@ -240,31 +240,31 @@ int main(int argc, char *argv[]) {
 		if (dst[0] == '\0') {
 			if (src != NULL && rm(src) == -1) {
 				err = 1;
-				warn(errno, "%s", src);
+				error(0, errno, "%s", src);
 			}
 			continue;
 		}
 		if (access(dst, F_OK) == 0) {
 			err = 1;
-			warn(EEXIST, "%s", dst);
+			error(0, EEXIST, "%s", dst);
 			continue;
 		}
 		char *base = dirop(dst, &mkdirs);
 		if (base == NULL) {
 			err = 1;
-			warn(errno, "%s", dst);
+			error(0, errno, "%s", dst);
 			continue;
 		}
 		if (src != NULL) {
 			if (rename(src, dst) == -1) {
 				err = 1;
-				warn(errno, "rename: %s, %s", src, dst);
+				error(0, errno, "rename: %s, %s", src, dst);
 			}
 		} else if (base[0] != '\0') {
 			FILE *f = fopen(dst, "a");
 			if (f == NULL) {
 				err = 1;
-				warn(errno, "%s", dst);
+				error(0, errno, "%s", dst);
 			} else {
 				fclose(f);
 			}

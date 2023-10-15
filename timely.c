@@ -15,7 +15,7 @@ void usage() {
 void setup() {
 	int inotifyfd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	if (inotifyfd == -1) {
-		fail(errno, "inotify_init");
+		error(EXIT_FAILURE, errno, "inotify_init");
 	}
 	pollfd.fd = inotifyfd;
 	pollfd.events = POLLIN;
@@ -24,14 +24,14 @@ void setup() {
 void watch(const char *path) {
 	int watchfd = inotify_add_watch(pollfd.fd, path, IN_CLOSE_WRITE);
 	if (watchfd == -1) {
-		fail(errno, "inotify_add_watch: %s", path);
+		error(EXIT_FAILURE, errno, "inotify_add_watch: %s", path);
 	}
 }
 
 void block() {
 	while (poll(&pollfd, 1, -1) == -1) {
 		if (errno != EINTR) {
-			fail(errno, "poll");
+			error(EXIT_FAILURE, errno, "poll");
 		}
 	}
 }
@@ -45,7 +45,7 @@ void drain() {
 			} else if (errno == EINTR) {
 				continue;
 			}
-			fail(errno, "read");
+			error(EXIT_FAILURE, errno, "read");
 		}
 		/*
 		 * Wait 100ms for more notifications because there is
