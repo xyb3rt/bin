@@ -1,12 +1,14 @@
 #!/bin/sh -e
 s="$1"
 shift
-doc="$HOME/.local/Qt/Docs/Qt-5.15.2"
-url="https://doc.qt.io/qt-5"
-case "$s" in
-[Qq]*) ;;
-*) s="*-$s" ;;
-esac
-find "$doc" -iname "$s.html" | while IFS='' read -r file; do
-	xdg-open "$url/${file##*/}" >/dev/null 2>&1
-done &
+exec >/dev/null 2>&1
+(
+	doc="$HOME/.local/Qt/Docs/Qt-5.15.2"
+	url="https://doc.qt.io/qt-5"
+	case "$s" in
+	[Qq]*) ;;
+	*) s="*-$s" ;;
+	esac
+	file="$(find "$doc" -iname "$s.html" | sort | sed 1q)"
+	[ -n "$file" ] && xdg-open "$url/${file##*/}"
+) &
