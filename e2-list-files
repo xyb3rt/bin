@@ -1,0 +1,30 @@
+#!/bin/sh -e
+pattern="$1"
+shift
+cd "$(e2-locate-project-root)"
+cd out/
+if [ $# -eq 0 ]; then
+	set -- *
+	[ "$*" = "*" ] && exit
+fi
+for res; do
+	e2-build-log "$res" | awk -v "pattern=$pattern" -v "res=$res" '
+		/^\+\+ cat \/tmp\/e2\/.*\.list$/ {
+			sub(/^\+\+ cat \/tmp\/e2\//, "")
+			sub(/\.list$/, "")
+			sub("^" res "-?", "")
+			pkg = $0 != "" ? res "(" $0 ")" : res
+			n = 0
+			next
+		}
+		pkg != "" && $0 ~ /^\+\+ / {
+			for (i = 0; i < n; i++) {
+				printf("%s %s\n", pkg, files[i])
+			}
+			pkg = ""
+		}
+		pkg != "" && $0 ~ pattern {
+			files[n++] = $0
+		}
+	'
+done

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+res="$1"
+shift
+cd "$(e2-locate-project-root)"
+tar Oxf "out/$res/last/result.tar" build.log.gz | gunzip
