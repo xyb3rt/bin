@@ -2,4 +2,7 @@
 p="$1"
 shift
 [ $# -eq 0 ] && set .
-find "$@" | sed 's;^\./;;' | rg --smart-case "$p[^/]*$" | sort
+find "$@" -name '.?*' -prune -o -print \
+	| sed 's:^\./::' \
+	| rg --smart-case "$p[^/]*$" \
+	| sort
