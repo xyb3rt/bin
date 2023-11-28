@@ -4,7 +4,7 @@ rg -Hn --heading --smart-case --sort path "$@" | awk -F '^' '
 		sep = NR
 	}
 	NR == sep + 1 {
-		printf("~~ %s\n", $0)
+		print
 	}
 	NR >= sep + 2 {
 		match($0, /^[0-9]+[-:]|--$/)
