@@ -1,0 +1,3 @@
+#!/bin/sh -e
+e2-fetch-sources "$@"
+e2-fetch-sources --update "$@"
