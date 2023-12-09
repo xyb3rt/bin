@@ -1,6 +1,6 @@
 all: fned timely
 
-fned timely: indispensbl/call.h indispensbl/core.h indispensbl/vec.h
+fned timely: base.h vec.h
 
 .c:
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< $(LDLIBS)

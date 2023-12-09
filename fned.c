@@ -1,8 +1,8 @@
 /*
  * fned: Rename files using $EDITOR
  */
-#include "indispensbl/call.h"
-#include "indispensbl/vec.h"
+#include "base.h"
+#include "vec.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
