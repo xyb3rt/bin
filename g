@@ -4,6 +4,9 @@ rg -Hn --heading --smart-case --sort path "$@" | awk -F '^' '
 		sep = NR
 	}
 	NR == sep + 1 {
+		if (!match($0, /^\.?\//)) {
+			$0 = "./" $0
+		}
 		print
 	}
 	NR >= sep + 2 {
