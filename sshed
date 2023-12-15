@@ -1,0 +1,14 @@
+#!/bin/sh -e
+host="$1"
+file="$2"
+shift 2
+temp="$(mktemp "/tmp/$(basename "$file").XXXXXXXX")"
+cleanup() {
+	rm -f "$temp"
+}
+. trap.sh
+echo "Download $file"
+scp "$@" "$host:$file" "$temp"
+${EDITOR:-ed} "$temp"
+echo "Upload $file"
+scp "$@" "$temp" "$host:$file"
