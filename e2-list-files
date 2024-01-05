@@ -25,6 +25,5 @@ for res; do
 		}
 		pkg != "" && $0 ~ pattern {
 			files[n++] = $0
-		}
-	'
+		}'
 done
