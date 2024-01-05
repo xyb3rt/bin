@@ -1,9 +1,13 @@
 #!/bin/sh -e
-f="/tmp/ped.$$"
-cleanup() {
-	rm -f "$f"
-}
-. trap.sh
+if [ $# -gt 0 ]; then
+	f="$1"
+else
+	f="$(mktemp /tmp/ped.XXXXXX)"
+	cleanup() {
+		rm -f "$f"
+	}
+	. trap.sh
+fi
 cat >"$f"
 (
 	[ -t 2 ] && exec </dev/tty >/dev/tty

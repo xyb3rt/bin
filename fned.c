@@ -186,7 +186,7 @@ void editfile(char *path) {
 }
 
 char *mktmp(void) {
-	char tp[] = "/tmp/fned.XXXXXX";
+	char tp[] = ".fned.XXXXXX";
 	int fd = mkstemp(tp);
 	if (fd == -1) {
 		error(EXIT_FAILURE, errno, "mkstemp: %s", tp);
