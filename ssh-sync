@@ -1,0 +1,19 @@
+#!/bin/sh -e
+host="$1"
+file="$2"
+shift 2
+temp="$(mktemp "/tmp/$(basename "$file").XXXXXXXX")"
+cleanup() {
+	rm -f "$temp"
+}
+. trap.sh
+echo "Download $file"
+scp "$host:$file" "$temp" || :
+[ -e "$file" ] && orig="$file" || orig="/dev/null"
+diff="$(diff -u "$orig" "$temp" || :)"
+[ -z "$diff" ] && exit
+diff="$(echo "$diff" | ped)"
+[ -n "$diff" ] && echo "$diff" | patch -up0 "$file"
+cmp -s "$file" "$temp" && exit
+echo "Upload $file"
+scp "$@" "$file" "$host:$file"
