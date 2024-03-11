@@ -1,0 +1,5 @@
+#!/bin/sh -e
+[ $# -eq 0 ] && set -- '*'
+set -- git -P branch --list "$@"
+"$@"
+git submodule -q foreach indir -- "$@"
