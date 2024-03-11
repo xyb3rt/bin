@@ -1,0 +1,8 @@
+#!/bin/sh -e
+[ "$1" != '--' ] && cd "$1"
+shift
+dir="$(pwd -L)"
+echo "Entering directory '$dir'"
+"$@" && r=0 || r=$?
+echo "Leaving directory '$dir'"
+exit $r
