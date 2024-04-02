@@ -1,4 +1,4 @@
 #!/bin/sh -e
 s="$1"
 shift
-xdg-open "https://duckduckgo.com/?q=\+site%3Adoc.qt.io+$s" >/dev/null 2>&1 &
+xdg-open "https://duckduckgo.com/?q=\\+site%3Adoc.qt.io+$s" >/dev/null 2>&1 &
