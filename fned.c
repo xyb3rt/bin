@@ -143,6 +143,7 @@ strvec readlines(FILE *f) {
 		}
 		vec_push(&lines, xstrdup(buf));
 	}
+	free(buf);
 	return lines;
 }
 
