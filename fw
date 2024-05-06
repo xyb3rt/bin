@@ -1,4 +1,1 @@
-#!/bin/sh -e
-p="$1"
-shift
-exec f "\b$p\b" "$@"
+f
