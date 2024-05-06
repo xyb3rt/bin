@@ -3,7 +3,7 @@ pat="$1"
 sub="$2"
 shift 2
 [ "${0##*/}" = sw ] && w=-w || w=
-files="$(rg -l $w "$pat" "$@")"
+files="$(rg -Fl $w "$pat" "$@")"
 [ -n "$files" ]
 tmp="$(mktemp ".s.XXXXXX")"
 cleanup() {
@@ -12,6 +12,6 @@ cleanup() {
 . trap.sh
 files="$(echo "$files" | sort | ped "$tmp")"
 echo "$files" | while IFS='' read -r file; do
-	rg --passthru -r "$sub" $w "$pat" "$file" | diff -u "$file" - || :
+	rg -F --passthru -r "$sub" $w "$pat" "$file" | diff -u "$file" - || :
 done >"$tmp"
 [ -s "$tmp" ] && ${EDITOR:-ed} "$tmp" && patch -up0 <"$tmp"

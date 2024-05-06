@@ -1,6 +1,6 @@
 #!/bin/sh
 [ "${0##*/}" = gw ] && w=-w || w=
-rg -Hn --heading --smart-case --sort path $w "$@" | awk -F '^' '
+rg -FHn --heading --smart-case --sort path $w "$@" | awk -F '^' '
 	/^$/ {
 		sep = NR
 	}
