@@ -1,0 +1,11 @@
+#!/bin/sh
+case "$1" in
+on*) p=; f='[[:upper:]]'; t='[[:lower:]]'; s="${1#on}";;
+*) p=on; f='[[:lower:]]'; t='[[:upper:]]'; s="$1";;
+esac
+r="${s#?}"
+c="$(echo "${s%$r}" | tr "$f" "$t")"
+s="$p$c$r"
+[ -n "$ACMEVIMPORT" ] && avim -l '\<' "$1" "$s" '\>'
+unset ACMEVIMPORT
+exec gw -e "$1" -e "$s"
