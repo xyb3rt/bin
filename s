@@ -3,7 +3,7 @@ pat="$1"
 sub="$2"
 shift 2
 [ "${0##*/}" = sw ] && w=-w || w=
-[ -n "$ACMEVIMPORT" ] && avim -l "\\V${w:+\\<}" "$pat" "${w:+\\>}"
+[ -n "$ACMEVIMPORT" ] && avim -l "${w:+\\<}" "$pat" "${w:+\\>}"
 files="$(rg -Fl $w "$pat" "$@")"
 [ -n "$files" ]
 tmp="$(mktemp ".s.XXXXXX")"
