@@ -1,6 +1,6 @@
 #!/bin/sh
 [ "${0##*/}" = gw ] && w=-w || w=
-[ -n "$ACMEVIMPORT" ] && avim -l "\\V${w:+\\<}" "$1" "${w:+\\>}"
+[ -n "$ACMEVIMPORT" ] && avim -l "${w:+\\<}" "$1" "${w:+\\>}"
 rg -FHn --heading --smart-case --sort path $w "$@" | awk -F '^' '
 	/^$/ {
 		sep = NR
