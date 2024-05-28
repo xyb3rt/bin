@@ -2,4 +2,4 @@
 [ $# -eq 0 ] && set -- '*'
 set -- git -P branch --list "$@"
 "$@"
-git submodule -q foreach indir -- "$@"
+git submodule -q foreach --recursive indir -- "$@"
