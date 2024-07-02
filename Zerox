@@ -1,0 +1,11 @@
+#!/bin/sh -e
+buf="$(avim -i all | awk -F '\t' 'NR==1{print $1}')"
+[ -n "$buf" ]
+case "$buf" in
+*/) cd "$buf";;
+*) cd "$(dirname "$buf")";;
+esac
+tmp="$(mktemp)"
+cat >"$tmp"
+avim -s cat "$tmp"
+rm -f "$tmp"
