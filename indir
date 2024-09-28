@@ -2,6 +2,7 @@
 [ "$1" != '--' ] && cd "$1"
 shift
 dir="$(pwd -L)"
+[ -n "$ACMEVIMDIR" ] && dir="${dir#$ACMEVIMDIR/}"
 echo "Entering directory '$dir'"
 "$@" && r=0 || r=$?
 echo "Leaving directory '$dir'"
