@@ -1,5 +1,5 @@
 #!/bin/sh -e
 [ $# -eq 0 ] && set -- '*'
-set -- git -P branch --list "$@"
+set -- git -P for-each-ref --format='%(refname:short)' "refs/heads/$1"
 "$@"
 git submodule -q foreach --recursive indir -- "$@"
