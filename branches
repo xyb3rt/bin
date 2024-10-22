@@ -1,5 +1,26 @@
 #!/bin/sh -e
-[ $# -eq 0 ] && set -- '*'
-set -- git -P for-each-ref --format='%(refname:short)' "refs/heads/$1"
-"$@"
-git submodule -q foreach --recursive indir -- "$@"
+if [ -n "$1" ]; then
+	set -- "refs/heads/$1" "refs/remotes/*/$1"
+else
+	set -- 'refs/heads/*'
+fi
+set -- git -P for-each-ref --format='%09%(refname)' "$@"
+("$@"; git submodule -q foreach --recursive indir -- "$@") | awk '
+	/\/HEAD$/ {
+		next
+	}
+	{
+		sub(/^\trefs\/(heads|remotes)\//, "\t")
+	}
+	/^Entering directory / || n {
+		l[n++] = $0
+	}
+	n == 3 {
+		print l[0]
+		print l[1]
+		n = 0
+	}
+	!n
+	/^Leaving directory / {
+		n = 0
+	}'
