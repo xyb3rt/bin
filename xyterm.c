@@ -2,12 +2,13 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-int acme;
+gint acme;
+gint dark;
 const char *font = "monospace 10";
-const char *colors[18] = {
-	"#2e3436", "#cc0000", "#4e9a06", "#c4a000", "#3465a4", "#75507b",
-	"#06989a", "#d3d7cf", "#555753", "#ef2929", "#8ae234", "#fce94f",
-	"#729fcf", "#ad7fa8", "#34e2e2", "#eeeeec", "#ffffdd", "#000000",
+const char *colors[16] = {
+	"#222222", "#cc0000", "#4e9a06", "#c4a000", "#3465a4", "#75507b",
+	"#06989a", "#cccccc", "#555555", "#ef2929", "#8ae234", "#fce94f",
+	"#729fcf", "#ad7fa8", "#34e2e2", "#eeeeee",
 };
 GdkRGBA palette[G_N_ELEMENTS(colors)];
 static const double zooms[] = {
@@ -15,6 +16,27 @@ static const double zooms[] = {
 };
 
 static void new_window(GApplication *app, char **argv, const char *cwd);
+
+static void set_colors(VteTerminal *term) {
+	GdkRGBA bg, fg;
+	gdk_rgba_parse(&bg, dark ? "#222222" : "#ffffdd");
+	gdk_rgba_parse(&fg, dark ? "#eeeeee" : "#222222");
+	vte_terminal_set_colors(term, &fg, &bg, palette, 16);
+}
+
+static void set_win_colors(gpointer win, gpointer data) {
+	set_colors(VTE_TERMINAL(gtk_window_get_child((GtkWindow *)win)));
+}
+
+static void set_dark(GSettings *settings, gchar *key, gpointer data) {
+	GtkApplication *app = (GtkApplication *)data;
+	gchar *colorscheme = g_settings_get_string(settings, "color-scheme");
+	dark = strcmp(colorscheme, "prefer-dark") == 0;
+	g_free(colorscheme);
+	g_object_set(gtk_settings_get_default(),
+			"gtk-application-prefer-dark-theme", dark, NULL);
+	g_list_foreach(gtk_application_get_windows(app), set_win_colors, NULL);
+}
 
 static gint on_cmdline(GApplication *app, GApplicationCommandLine *cmdline) {
 	int argc;
@@ -89,9 +111,9 @@ static void new_window(GApplication *app, char **argv, const char *cwd) {
 	VteTerminal *term = VTE_TERMINAL(widget);
 	vte_terminal_set_audible_bell(term, FALSE);
 	vte_terminal_set_bold_is_bright(term, FALSE);
-	vte_terminal_set_colors(term, &palette[17], &palette[16], palette, 16);
 	vte_terminal_set_cursor_blink_mode(term, VTE_CURSOR_BLINK_OFF);
 	vte_terminal_set_mouse_autohide(term, TRUE);
+	set_colors(term);
 	PangoFontDescription *fd = pango_font_description_from_string(font);
 	vte_terminal_set_font(term, fd);
 	pango_font_description_free(fd);
@@ -141,5 +163,9 @@ int main(int argc, char *argv[]) {
 	GtkApplication *app = gtk_application_new(acme ? "xyb3rt.acme" :
 			"xyb3rt.xyterm", G_APPLICATION_HANDLES_COMMAND_LINE);
 	g_signal_connect(app, "command-line", G_CALLBACK(on_cmdline), NULL);
+	GSettings *settings = g_settings_new("org.gnome.desktop.interface");
+	g_signal_connect(settings, "changed::color-scheme",
+			G_CALLBACK(set_dark), app);
+	set_dark(settings, "color-scheme", app);
 	return g_application_run(G_APPLICATION(app), argc, argv);
 }
