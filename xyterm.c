@@ -67,11 +67,11 @@ static gboolean on_key(GtkEventController *controller, guint key, guint code,
 
 static void on_title(VteTerminal *term, gpointer data) {
 	GtkWindow *win = (GtkWindow *)data;
-	const char *title = vte_terminal_get_window_title(term);
-	if (title[0] == '\0') {
-		title = g_get_application_name();
-	}
-	gtk_window_set_title(win, title);
+	char *title;
+	g_object_get(term, "window-title", &title, NULL);
+	gtk_window_set_title(win, title && title[0] != '\0' ? title :
+			g_get_application_name());
+	g_free(title);
 }
 
 static void on_exited(VteTerminal *term, int status, gpointer data) {
