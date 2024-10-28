@@ -11,7 +11,8 @@ cleanup() {
 }
 . trap.sh
 echo "Download $file"
-scp "$host:$rfile" "$temp" || :
+scp "$host:$rfile" "$temp" && r=0 || r=$?
+[ $r -le 1 ]
 [ -e "$file" ] && orig="$file" || orig="/dev/null"
 diff="$(diff -u "$orig" "$temp" || :)"
 [ -z "$diff" ] && exit
