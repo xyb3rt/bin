@@ -2,7 +2,10 @@
 host="$1"
 file="$2"
 shift 2
-temp="$(mktemp "/tmp/$(basename "$file").XXXXXXXX")"
+base="$(basename "$file")"
+file="$(cd "$(dirname "$file")"; pwd -L)/$base"
+file="${file#$HOME/}"
+temp="$(mktemp "/tmp/$base.XXXXXXXX")"
 cleanup() {
 	rm -f "$temp"
 }
