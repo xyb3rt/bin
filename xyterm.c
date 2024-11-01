@@ -15,7 +15,7 @@ static const double zooms[] = {
 	1.0/1.728, 1.0/1.44, 1.0/1.2, 1.0, 1.0*1.2, 1.0*1.44, 1.0*1.728
 };
 
-static void new_window(GApplication *app, char **argv, const char *cwd);
+static void new_window(GApplication *app, GApplicationCommandLine *cmdline);
 
 static void set_colors(VteTerminal *term) {
 	GdkRGBA bg, fg;
@@ -39,11 +39,7 @@ static void set_dark(GSettings *settings, gchar *key, gpointer data) {
 }
 
 static gint on_cmdline(GApplication *app, GApplicationCommandLine *cmdline) {
-	int argc;
-	char **argv = g_application_command_line_get_arguments(cmdline, &argc);
-	const char *cwd = g_application_command_line_get_cwd(cmdline);
-	new_window(app, argc > 1 ? &argv[1] : NULL, cwd);
-	g_strfreev(argv);
+	new_window(app, cmdline);
 	return 0;
 }
 
@@ -55,7 +51,7 @@ static gboolean on_key(GtkEventController *controller, guint key, guint code,
 	if (!(mod & GDK_CONTROL_MASK)) {
 		return FALSE;
 	} else if (key == GDK_KEY_N && (mod & GDK_SHIFT_MASK)) {
-		new_window(app, NULL, NULL);
+		new_window(app, NULL);
 	} else if (key == GDK_KEY_C && (mod & GDK_SHIFT_MASK)) {
 		vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
 	} else if (key == GDK_KEY_V && (mod & GDK_SHIFT_MASK)) {
@@ -101,7 +97,7 @@ static void on_exited(VteTerminal *term, int status, gpointer data) {
 	gtk_window_close(win);
 }
 
-static void new_window(GApplication *app, char **argv, const char *cwd) {
+static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	GtkWidget *widget;
 	widget = gtk_application_window_new(GTK_APPLICATION(app));
 	GtkWindow *win = GTK_WINDOW(widget);
@@ -113,6 +109,10 @@ static void new_window(GApplication *app, char **argv, const char *cwd) {
 	vte_terminal_set_bold_is_bright(term, FALSE);
 	vte_terminal_set_cursor_blink_mode(term, VTE_CURSOR_BLINK_OFF);
 	vte_terminal_set_mouse_autohide(term, TRUE);
+	if (acme) {
+		vte_terminal_set_size(term, 100, 60);
+		vte_terminal_set_scrollback_lines(term, 0);
+	}
 	set_colors(term);
 	PangoFontDescription *fd = pango_font_description_from_string(font);
 	vte_terminal_set_font(term, fd);
@@ -123,33 +123,40 @@ static void new_window(GApplication *app, char **argv, const char *cwd) {
 	GtkEventController *controller = gtk_event_controller_key_new();
 	g_signal_connect(controller, "key-pressed", G_CALLBACK(on_key), win);
 	gtk_widget_add_controller(widget, controller);
-	char *cmd[3] = {"sh"};
+	gtk_widget_grab_focus(widget);
+	gtk_window_present(win);
+	char **argv = NULL;
+	const char *cwd = NULL;
+	GStrvBuilder *cmdb = g_strv_builder_new();
 	if (acme) {
+		g_strv_builder_add(cmdb, "vim");
+	}
+	if (cmdline) {
+		argv = g_application_command_line_get_arguments(cmdline, NULL);
+		cwd = g_application_command_line_get_cwd(cmdline);
+	}
+	if (argv && argv[0] && argv[1]) {
+		g_strv_builder_addv(cmdb, (const char **)&argv[1]);
+	} else if (acme) {
 		int fd = cwd ? open(cwd, O_RDONLY | O_DIRECTORY) : AT_FDCWD;
 		if (fd != -1) {
 			if (faccessat(fd, "guide", F_OK, 0) == 0) {
-				cmd[1] = "guide";
+				g_strv_builder_add(cmdb, "guide");
 			}
 			if (fd != AT_FDCWD) {
 				close(fd);
 			}
 		}
-		cmd[0] = "vim";
-		argv = cmd;
-		vte_terminal_set_size(term, 100, 60);
-		vte_terminal_set_scrollback_lines(term, 0);
-	} else if (argv == NULL) {
+	} else {
 		char *sh = getenv("SHELL");
-		if (sh && sh[0] != '\0') {
-			cmd[0] = sh;
-		}
-		argv = cmd;
+		g_strv_builder_add(cmdb, sh && sh[0] != '\0' ? sh : "sh");
 	}
-	gtk_widget_grab_focus(widget);
-	gtk_window_present(win);
-	vte_terminal_spawn_async(term, VTE_PTY_DEFAULT, cwd, argv, NULL,
+	char **cmdv = g_strv_builder_unref_to_strv(cmdb);
+	vte_terminal_spawn_async(term, VTE_PTY_DEFAULT, cwd, cmdv, NULL,
 			G_SPAWN_DEFAULT, NULL, NULL, NULL, -1, NULL, NULL,
 			NULL);
+	g_strfreev(cmdv);
+	g_strfreev(argv);
 }
 
 int main(int argc, char *argv[]) {
