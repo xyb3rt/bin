@@ -6,7 +6,7 @@ gint acme;
 gint dark;
 const char *font = "monospace 10";
 const char *colors[16] = {
-	"#222222", "#cc0000", "#4e9a06", "#c4a000", "#3465a4", "#75507b",
+	"#111111", "#cc0000", "#4e9a06", "#c4a000", "#3465a4", "#75507b",
 	"#06989a", "#cccccc", "#555555", "#ef2929", "#8ae234", "#fce94f",
 	"#729fcf", "#ad7fa8", "#34e2e2", "#eeeeee",
 };
@@ -19,8 +19,8 @@ static void new_window(GApplication *app, char **argv, const char *cwd);
 
 static void set_colors(VteTerminal *term) {
 	GdkRGBA bg, fg;
-	gdk_rgba_parse(&bg, dark ? "#222222" : "#ffffdd");
-	gdk_rgba_parse(&fg, dark ? "#eeeeee" : "#222222");
+	gdk_rgba_parse(&bg, dark ? "#111111" : "#ffffdd");
+	gdk_rgba_parse(&fg, dark ? "#eeeeee" : "#111111");
 	vte_terminal_set_colors(term, &fg, &bg, palette, 16);
 }
 
