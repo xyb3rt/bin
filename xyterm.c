@@ -17,6 +17,23 @@ static const double zooms[] = {
 
 static void new_window(GApplication *app, GApplicationCommandLine *cmdline);
 
+static void done(VteTerminal *term, GApplicationCommandLine *cmdline,
+		int status) {
+	GtkWindow *win = GTK_WINDOW(gtk_widget_get_parent(GTK_WIDGET(term)));
+	if (cmdline) {
+		g_application_command_line_set_exit_status(cmdline, status);
+		g_object_unref(cmdline);
+	}
+	if (!win) {
+		return;
+	}
+	GtkApplication *app = GTK_APPLICATION(gtk_window_get_application(win));
+	if (g_list_length(gtk_application_get_windows(app)) == 1) {
+		exit(status);
+	}
+	gtk_window_close(win);
+}
+
 static void set_colors(VteTerminal *term) {
 	GdkRGBA bg, fg;
 	gdk_rgba_parse(&bg, dark ? "#111111" : "#ffffdd");
@@ -93,8 +110,26 @@ static void on_title(VteTerminal *term, gpointer data) {
 }
 
 static void on_exited(VteTerminal *term, int status, gpointer data) {
-	GtkWindow *win = (GtkWindow *)data;
-	gtk_window_close(win);
+	GApplicationCommandLine *cmdline = (GApplicationCommandLine *)data;
+	done(term, cmdline, WIFEXITED(status) ? WEXITSTATUS(status) : 1);
+}
+
+static void on_spawned(VteTerminal *term, GPid pid, GError *error,
+		gpointer data) {
+	GApplicationCommandLine *cmdline = (GApplicationCommandLine *)data;
+	if (pid == -1) {
+		if (cmdline) {
+			g_application_command_line_printerr(cmdline, "%s\n",
+					error->message);
+		} else {
+			fprintf(stderr, "%s\n", error->message);
+		}
+		done(term, cmdline, 1);
+	} else {
+		GtkWidget *widget = GTK_WIDGET(term);
+		gtk_widget_grab_focus(widget);
+		gtk_window_present(GTK_WINDOW(gtk_widget_get_parent(widget)));
+	}
 }
 
 static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
@@ -119,12 +154,10 @@ static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	pango_font_description_free(fd);
 	g_signal_connect(term, "window-title-changed", G_CALLBACK(on_title),
 			win);
-	g_signal_connect(term, "child-exited", G_CALLBACK(on_exited), win);
+	g_signal_connect(term, "child-exited", G_CALLBACK(on_exited), cmdline);
 	GtkEventController *controller = gtk_event_controller_key_new();
 	g_signal_connect(controller, "key-pressed", G_CALLBACK(on_key), win);
 	gtk_widget_add_controller(widget, controller);
-	gtk_widget_grab_focus(widget);
-	gtk_window_present(win);
 	char **argv = NULL;
 	const char *cwd = NULL;
 	GStrvBuilder *cmdb = g_strv_builder_new();
@@ -134,6 +167,7 @@ static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	if (cmdline) {
 		argv = g_application_command_line_get_arguments(cmdline, NULL);
 		cwd = g_application_command_line_get_cwd(cmdline);
+		g_object_ref(cmdline);
 	}
 	if (argv && argv[0] && argv[1]) {
 		g_strv_builder_addv(cmdb, (const char **)&argv[1]);
@@ -153,8 +187,8 @@ static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	}
 	char **cmdv = g_strv_builder_unref_to_strv(cmdb);
 	vte_terminal_spawn_async(term, VTE_PTY_DEFAULT, cwd, cmdv, NULL,
-			G_SPAWN_DEFAULT, NULL, NULL, NULL, -1, NULL, NULL,
-			NULL);
+			G_SPAWN_DEFAULT, NULL, NULL, NULL, -1, NULL,
+			on_spawned, cmdline);
 	g_strfreev(cmdv);
 	g_strfreev(argv);
 }
