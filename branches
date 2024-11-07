@@ -4,7 +4,7 @@ if [ -n "$1" ]; then
 else
 	set -- 'refs/heads/*'
 fi
-set -- git -P for-each-ref --format='%09%(refname)' "$@"
+set -- git -P for-each-ref --format='%09%(refname)' --sort=-committerdate "$@"
 ("$@"; git submodule -q foreach --recursive indir -- "$@") | awk '
 	/\/HEAD$/ {
 		next
