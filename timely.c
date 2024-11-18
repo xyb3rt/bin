@@ -60,7 +60,7 @@ void drain() {
 
 void clearbuf() {
 	char *argv[] = {"avim", "-c", NULL, NULL};
-	argv[2] = getenv("ACMEVIMBUF");
+	argv[2] = getenv("ACMEVIMOUTBUF");
 	if (argv[2] != NULL && argv[2][0] != '\0') {
 		call(argv, NULL);
 	}

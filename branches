@@ -5,7 +5,6 @@ else
 	set -- 'refs/heads/*'
 fi
 set -- git -P for-each-ref --format='%09%(refname)' --sort=-committerdate "$@"
-[ -n "$ACMEVIMDIR" ] && ACMEVIMDIR="$PWD"
 ("$@"; git submodule -q foreach --recursive indir -- "$@") | awk '
 	/\/HEAD$/ {
 		next
