@@ -1,0 +1,24 @@
+#!/bin/sh
+r="$(git branch --list --all --format="%(objectname)" "$1")"
+[ -n "$r" ] && r="$(git branch -l -a --format='%(objectname)%09%(refname)' \
+	| awk -F '\t' -v "b=$1" '
+		func m(b) {
+			return b ~ /^(develop|integration|main|master|merge)$/
+		}
+		BEGIN {
+			sub(/^.*\//, "", b)
+		}
+		{
+			sub(/^.*\//, "", $2)
+			if ($2 == b) {
+				print $1
+			} else if (m($2) && !m(b)) {
+				print "^" $1
+			}
+		}' \
+	| git log --oneline --graph --decorate --stdin "$1")"
+if [ -n "$r" ]; then
+	echo "$r"
+else
+	git show --decorate --format=fuller -p --numstat "$1"
+fi
