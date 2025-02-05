@@ -1,0 +1,19 @@
+#!/bin/sh -e
+file="$1"
+shift
+info="$(git ls-files --full-name --stage "$file")"
+mode="${info%%[^0-9]*}"
+path="${info#*	}"
+if [ -z "$mode" -o -z "$path" ]; then
+	echo "Not in index: $file" >&2
+	exit 1
+fi
+temp="$(mktemp "$file.XXXXXX")"
+cleanup() {
+	rm -f "$temp"
+}
+. trap.sh
+git show :"$path" >"$temp"
+${EDITOR:-ed} "$temp"
+hash="$(git hash-object -w "$temp")"
+git update-index --cacheinfo "$mode,$hash,$path"
