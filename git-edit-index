@@ -1,6 +1,7 @@
 #!/bin/sh -e
 file="$1"
-shift
+[ -z "$file" -a -n "$ACMEVIMFILE" ] && file="$ACMEVIMDIR/$ACMEVIMFILE"
+[ -n "$file" ]
 info="$(git ls-files --full-name --stage "$file")"
 mode="${info%%[^0-9]*}"
 path="${info#*	}"
@@ -14,6 +15,8 @@ cleanup() {
 }
 . trap.sh
 git show :"$path" >"$temp"
-${EDITOR:-ed} "$temp"
+${EDITOR:-ed} "$temp" &
+[ "$file" = "$ACMEVIMDIR/$ACMEVIMFILE" ] && avim -d "$file" "$temp"
+wait
 hash="$(git hash-object -w "$temp")"
 git update-index --cacheinfo "$mode,$hash,$path"
