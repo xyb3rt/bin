@@ -15,8 +15,7 @@ cleanup() {
 }
 . trap.sh
 git show :"$path" >"$temp"
-${EDITOR:-ed} "$temp" &
-[ "$file" = "$ACMEVIMDIR/$ACMEVIMFILE" ] && avim -d "$file" "$temp"
-wait
+[ -n "$ACMEVIMPORT" ] && cmd=avim || cmd=vim
+$cmd -d "$file" "$temp"
 hash="$(git hash-object -w "$temp")"
 git update-index --cacheinfo "$mode,$hash,$path"
