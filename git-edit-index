@@ -1,21 +1,21 @@
 #!/bin/sh -e
-file="$1"
-[ -z "$file" -a -n "$ACMEVIMFILE" ] && file="$ACMEVIMDIR/$ACMEVIMFILE"
-[ -n "$file" ]
-info="$(git ls-files --full-name --stage "$file")"
-mode="${info%%[^0-9]*}"
-path="${info#*	}"
-if [ -z "$mode" -o -z "$path" ]; then
-	echo "Not in index: $file" >&2
-	exit 1
-fi
-temp="$(mktemp "$file.XXXXXX")"
+temp="$(mktemp)"
 cleanup() {
 	rm -f "$temp"
 }
 . trap.sh
-git show :"$path" >"$temp"
-[ -n "$ACMEVIMPORT" ] && cmd=avim || cmd=vim
-$cmd -d "$file" "$temp"
-hash="$(git hash-object -w "$temp")"
-git update-index --cacheinfo "$mode,$hash,$path"
+for file; do
+	[ -e "$file" -a ! -d "$file" ] || continue
+	info="$(git ls-files --full-name --stage "$file")"
+	mode="${info%%[^0-9]*}"
+	path="${info#*	}"
+	git show :"$path" >"$temp"
+	if [ -n "$ACMEVIMPORT" ]; then
+		avim -o "$file"
+		avim -d "$file" "$temp"
+	else
+		vim -d "$file" "$temp"
+	fi
+	hash="$(git hash-object -w "$temp")"
+	git update-index --cacheinfo "$mode,$hash,$path"
+done
