@@ -1,0 +1,18 @@
+#!/bin/sh
+exec 2>/dev/null
+log=''
+case "$1" in
+*...*)
+	log="$(git range-diff "$1")" ;;
+*..*)
+	log="$(git log --oneline --decorate "$1")" ;;
+esac
+if [ -z "$log" ] && git show-ref --quiet "$1"; then
+	log="$(git log --oneline --decorate "$1" \
+		"^$(git merge-base --octopus "$1" $(git remote))")"
+fi
+if [ -n "$log" ]; then
+	echo "$log"
+else
+	git show --decorate --format=fuller -p --numstat "$1"
+fi
