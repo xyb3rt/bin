@@ -1,0 +1,20 @@
+#!/bin/sh -e
+MERGED="$1"
+LOCAL="$2"
+REMOTE="$3"
+BASE="$4"
+shift 4
+if [ "$MERGED" = "$BASE" ]; then
+	# difftool
+	set -- "$REMOTE" "$LOCAL"
+else
+	# mergetool
+	cp "$LOCAL" "$MERGED"
+	set -- "$MERGED" "$BASE" "$REMOTE"
+fi
+if [ -n "$ACMEVIMPORT" ]; then
+	avim -o "$1"
+	exec avim -d "$@"
+else
+	exec vim -d "$@"
+fi
