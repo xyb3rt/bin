@@ -2,25 +2,11 @@
 if [ -n "$1" ]; then
 	set -- "refs/heads/$1" "refs/remotes/*/$1"
 else
-	set -- 'refs/heads/*'
+	set -- "refs/heads/*"
 fi
 set -- git -P for-each-ref --format='%09%(refname)' --sort=-committerdate "$@"
 ("$@"; git submodule -q foreach --recursive indir -- "$@") | awk '
-	/\/HEAD$/ {
-		next
-	}
-	{
+	$0 !~ /\/HEAD$/ {
 		sub(/^\trefs\/(heads|remotes)\//, "\t")
-	}
-	/^Entering directory / || n {
-		l[n++] = $0
-	}
-	n == 3 {
-		print l[0]
-		print l[1]
-		n = 0
-	}
-	!n
-	/^Leaving directory / {
-		n = 0
+		print
 	}'

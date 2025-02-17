@@ -1,9 +1,10 @@
 #!/bin/sh -e
+set -o pipefail
 [ "$1" != '--' ] && cd "$1"
 shift
 dir="$(pwd -L)"
 [ -n "$ACMEVIMOUTDIR" ] && dir="${dir#$ACMEVIMOUTDIR/}"
-echo "Entering directory '$dir'"
-"$@" && r=0 || r=$?
-echo "Leaving directory '$dir'"
-exit $r
+"$@" 2>&1 | awk -v "d='$dir'" '
+	NR == 1 { print "Entering directory " d }
+	1
+	END { if (NR > 0) print "Leaving directory " d }'
