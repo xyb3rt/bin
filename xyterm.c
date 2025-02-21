@@ -12,7 +12,6 @@ const char *colors[16] = {
 	"#729fcf", "#ad7fa8", "#34e2e2", "#eeeeee",
 };
 GdkRGBA palette[G_N_ELEMENTS(colors)];
-char *themelink;
 static const double zooms[] = {
 	1.0/1.728, 1.0/1.44, 1.0/1.2, 1.0, 1.0*1.2, 1.0*1.44, 1.0*1.728
 };
@@ -62,10 +61,6 @@ static void set_dark(GSettings *settings, gchar *key, gpointer data) {
 	g_object_set(gtk_settings_get_default(),
 			"gtk-application-prefer-dark-theme", dark, NULL);
 	g_list_foreach(gtk_application_get_windows(app), set_win_colors, NULL);
-	if (themelink) {
-		unlink(themelink);
-		symlink(dark ? "dark" : "light", themelink);
-	}
 }
 
 static gint on_cmdline(GApplication *app, GApplicationCommandLine *cmdline) {
@@ -214,17 +209,6 @@ static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	g_strfreev(argv);
 }
 
-void init_cache() {
-	char *dir = g_strdup_printf("%s/%s", g_get_user_cache_dir(),
-			acme ? "acme" : "xyterm");
-	if (dir && (g_file_test(dir, G_FILE_TEST_IS_DIR) ||
-			mkdir(dir, S_IRWXU) == 0)) {
-		setenv("XYTERMCACHE", dir, 1);
-		themelink = g_strdup_printf("%s/theme", dir);
-	}
-	g_free(dir);
-}
-
 int main(int argc, char *argv[]) {
 	const char *s = argc > 0 ? strrchr(argv[0], '/') : NULL;
 	acme = strcmp(s ? &s[1] : argv[0], "acme") == 0;
@@ -232,7 +216,6 @@ int main(int argc, char *argv[]) {
 	for (size_t i = 0; i < G_N_ELEMENTS(colors); i++) {
 		gdk_rgba_parse(&palette[i], colors[i]);
 	}
-	init_cache();
 	g_set_application_name(acme ? "Acme" : "XyTerm");
 	GtkApplication *app = gtk_application_new(acme ? "xyb3rt.acme" :
 			"xyb3rt.xyterm", G_APPLICATION_HANDLES_COMMAND_LINE);
