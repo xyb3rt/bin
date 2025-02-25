@@ -1,9 +1,6 @@
 #!/bin/sh -e
 temp="$(mktemp)"
-cleanup() {
-	rm -f "$temp"
-}
-. trap.sh
+CLEANUP="rm -f '$temp'" . trap.sh
 for file; do
 	[ -e "$file" -a ! -d "$file" ] || continue
 	info="$(git ls-files --full-name --stage "$file")"

@@ -7,10 +7,7 @@ shift 2
 files="$(rg -Fl $w "$pat" "$@")"
 [ -n "$files" ]
 tmp="$(mktemp ".s.XXXXXX")"
-cleanup() {
-	rm -f "$tmp"
-}
-. trap.sh
+CLEANUP="rm -f '$tmp'" . trap.sh
 files="$(echo "$files" | sort | ped "$tmp")"
 echo "$files" | while IFS='' read -r file; do
 	rg -F --passthru -r "$sub" $w "$pat" "$file" | diff -u "$file" - || :

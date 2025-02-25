@@ -3,10 +3,7 @@ if [ $# -gt 0 ]; then
 	f="$1"
 else
 	f="$(mktemp /tmp/ped.XXXXXX)"
-	cleanup() {
-		rm -f "$f"
-	}
-	. trap.sh
+	CLEANUP="rm -f '$f'" . trap.sh
 fi
 cat >"$f"
 (

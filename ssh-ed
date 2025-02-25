@@ -6,10 +6,7 @@ base="$(basename "$file")"
 file="$(cd "$(dirname "$file")"; pwd -L)/$base"
 file="${file#$HOME/}"
 temp="$(mktemp "/tmp/$base.XXXXXXXX")"
-cleanup() {
-	rm -f "$temp"
-}
-. trap.sh
+CLEANUP="rm -f '$temp'" . trap.sh
 echo "Download $file"
 scp "$@" "$host:$file" "$temp"
 ${EDITOR:-ed} "$temp"
