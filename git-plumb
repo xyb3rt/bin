@@ -7,8 +7,15 @@ case "$1" in
 	git log --oneline --decorate "$1" && exit ;;
 esac
 if git show-ref --quiet "$1"; then
-	log="$(git log --oneline --decorate "$1" \
-		"^$(git merge-base --octopus "$1" $(git remote))")"
-	[ -n "$log" ] && { echo "$log"; exit; }
+	trylog() {
+		outp="$(git log --oneline --decorate "$@")"
+		if [ -n "$outp" ]; then
+			echo "$outp"
+			exit
+		fi
+	}
+	trylog "$1" ^origin 
+	trylog --first-parent --exclude-first-parent-only "$1" ^origin
+	trylog "$1"
 fi
 exec git show --decorate --format=fuller -p --numstat "$1"
