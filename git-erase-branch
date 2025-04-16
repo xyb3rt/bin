@@ -1,0 +1,11 @@
+#!/bin/sh -e
+export B="$1"
+shift
+git-repos | while IFS= read -r repo; do
+	indir "$repo" sh -c '
+		exec 2>/dev/null
+		git branch -D "$B"
+		for r in $(git remote); do
+			git branch -Dr "$r/$B" && git push -d "$r" "$B"
+		done; :'
+done
