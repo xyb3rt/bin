@@ -3,8 +3,10 @@ set -o pipefail
 [ "$1" != '--' ] && cd "$1"
 shift
 dir="$(pwd -L)"
-[ -n "$ACMEVIMOUTDIR" ] && dir="${dir#$ACMEVIMOUTDIR/}"
-"$@" 2>&1 | awk -v "d='$dir'" '
-	NR == 1 { print "Entering directory " d }
+if [ -n "$ACMEVIMOUTDIR" ]; then
+	[ "$dir" = "$ACMEVIMOUTDIR" ] && dir= || dir="${dir#$ACMEVIMOUTDIR/}"
+fi
+"$@" 2>&1 | awk -v "d=${dir:+'}$dir${dir:+'}" '
+	d != "" && NR == 1 { print "Entering directory " d }
 	1 { print; fflush() }
-	END { if (NR > 0) print "Leaving directory " d }'
+	END { if (d != "" && NR > 0) print "Leaving directory " d }'
