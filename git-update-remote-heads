@@ -1,6 +1,6 @@
 #!/bin/sh
-find . -name .git | while IFS= read -r repo; do
-	indir "${repo%/.git}" sh -c '
+git-repos | while IFS= read -r repo; do
+	indir "$repo" sh -c '
 		for remote in $(git remote); do
 			git remote set-head $remote --auto
 		done'
