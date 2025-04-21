@@ -1,4 +1,3 @@
 #!/bin/sh -e
-git-repos | while IFS= read -r repo; do
-	indir "$repo" git fetch --all --prune --tags --no-recurse-submodules
-done
+git-repos | yargs indir '{}' \
+	git fetch --all --prune --tags --no-recurse-submodules

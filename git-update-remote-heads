@@ -1,7 +1,5 @@
 #!/bin/sh
-git-repos | while IFS= read -r repo; do
-	indir "$repo" sh -c '
-		for remote in $(git remote); do
-			git remote set-head $remote --auto
-		done'
-done
+git-repos | yargs indir '{}' sh -c '
+	for remote in $(git remote); do
+		git remote set-head $remote --auto
+	done'
