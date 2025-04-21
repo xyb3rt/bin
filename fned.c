@@ -1,14 +1,11 @@
 /*
  * fned: Rename files using $EDITOR
  */
-#include "base.h"
-#include "vec.h"
+#include "io.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
-
-typedef char **strvec;
 
 char *editor;
 char *tmp;
@@ -124,27 +121,6 @@ int redirected(void) {
 	struct stat st;
 	return fstat(0, &st) == 0 && (S_ISFIFO(st.st_mode) ||
 		S_ISREG(st.st_mode) || S_ISSOCK(st.st_mode));
-}
-
-strvec readlines(FILE *f) {
-	char *buf = NULL;
-	size_t size = 0;
-	strvec lines = vec_new();
-	for (;;) {
-		ssize_t len = getline(&buf, &size, f);
-		if (len == -1) {
-			if (ferror(f)) {
-				error(EXIT_FAILURE, errno, "getline");
-			}
-			break;
-		}
-		if (len > 0 && buf[len - 1] == '\n') {
-			buf[--len] = '\0';
-		}
-		vec_push(&lines, xstrdup(buf));
-	}
-	free(buf);
-	return lines;
 }
 
 strvec readfile(const char *path) {

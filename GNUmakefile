@@ -1,6 +1,7 @@
 all: darkmon fned timely xyterm
 
-fned timely: base.h vec.h
+fned: base.h io.h vec.h
+timely: base.h vec.h
 
 darkmon: CFLAGS += $(shell pkg-config --cflags gio-2.0)
 darkmon: LDLIBS += $(shell pkg-config --libs gio-2.0)
