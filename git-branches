@@ -5,7 +5,7 @@ else
 	set -- "refs/heads/*"
 fi
 set -- git -P for-each-ref --format='%09%(refname)' --sort=-committerdate "$@"
-git-repos | yargs indir '{}' "$@" | awk '
+git-repos | sort | yargs indir '{}' "$@" | awk '
 	$0 !~ /\/HEAD$/ {
 		sub(/^\trefs\/(heads|remotes)\//, "\t")
 		print

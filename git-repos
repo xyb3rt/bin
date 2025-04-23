@@ -1,4 +1,3 @@
 #!/bin/sh
 find . -name .git '(' -type d -o -exec grep -qv '/worktrees/' '{}' ';' ')' -print \
-	| sed -e 's:/.git$::' -e 's:^./::' \
-	| sort
+	| sed -e 's:/.git$::' -e 's:^./::'
