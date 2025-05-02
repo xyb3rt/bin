@@ -76,6 +76,9 @@ int main(int argc, char *argv[]) {
 	if (argc == 2) {
 		watch(".");
 	} else for (int i = 2; i < argc; i++) {
+		if (!isdir(argv[i])) {
+			error(EXIT_FAILURE, 0, "%s: Not a directory", argv[i]);
+		}
 		watch(argv[i]);
 	}
 	system(argv[1]);

@@ -4,10 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 static const char *argv0;
+
+int isdir(const char *path) {
+	struct stat st;
+	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
+}
 
 static char *strbsnm(const char *s) {
 	char *t = strrchr((char *)s, '/');

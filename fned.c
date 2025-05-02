@@ -5,7 +5,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/stat.h>
 
 char *editor;
 char *tmp;
@@ -26,11 +25,6 @@ void sighandle(int sig) {
 	sigsetup(sig, SIG_DFL);
 	raise(sig);
 	_exit(1);
-}
-
-int isdir(const char *path) {
-	struct stat st;
-	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
 int mkdirs(char *path) {
