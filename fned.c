@@ -102,7 +102,9 @@ strvec ls(const char *path) {
 			}
 			break;
 		}
-		if (e->d_name[0] != '.') {
+		if (strcmp(e->d_name, ".") != 0 &&
+		    strcmp(e->d_name, "..") != 0 &&
+		    strcmp(e->d_name, tmp) != 0) {
 			vec_push(&entries, xstrdup(e->d_name));
 		}
 	}
