@@ -1,4 +1,5 @@
 cd "$(dirname "$0")"
+X="$PWD"
 up_env() {
 	while :; do
 		[ -e env.sh ] && set -- "$PWD/env.sh" "$@"
