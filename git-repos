@@ -1,3 +1,8 @@
 #!/bin/sh
+root="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$root" ]; then
+	echo "$root"
+	exec git submodule foreach --quiet --recursive 'echo "$toplevel/$sm_path"'
+fi
 find . -name .git '(' -type d -o -exec grep -qv '/worktrees/' '{}' ';' ')' -print \
-	| sed -e 's:/.git$::' -e 's:^./::'
+	| sed -e 's:^./::' -e 's:/.git$::'
