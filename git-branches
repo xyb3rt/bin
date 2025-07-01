@@ -4,9 +4,14 @@ if [ -n "$1" ]; then
 else
 	set -- "refs/heads/*"
 fi
-set -- git -P for-each-ref --format='%09%(refname)' --sort=-committerdate "$@"
+set -- git -P for-each-ref --format='%(objectname) %(refname)' \
+	--sort=-authordate --sort=-committerdate "$@"
 git-repos | sort | yargs indir '{}' "$@" | awk '
-	$0 !~ /\/HEAD$/ {
-		sub(/^\trefs\/(heads|remotes)\//, "\t")
-		print
+	{
+		s = !l ? "" : $1 == l ? " " : "\n"
+		l = $1
+		sub(/^[^ ]* refs\/(heads|remotes)\//, "")
+		printf("%s%s", s, $0)
+	} END {
+		if (NR > 0) printf("\n")
 	}'
