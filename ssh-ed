@@ -9,11 +9,13 @@ temp="$(mktemp "/tmp/$base.XXXXXXXX")"
 CLEANUP="rm -f '$temp'" . trap.sh
 echo "Download $file"
 scp "$@" "$host:$rfile" "$temp"
+hash="$(sha512sum "$temp")"
 if [ -n "$ACMEVIMPORT" -a -e "$file" ]; then
 	avim -o "$file"
 	avim -d "$file" "$temp"
 else
 	${EDITOR:-ed} "$temp"
 fi
+[ "$hash" = "$(sha512sum "$temp")" ] && exit
 echo "Upload $file"
 scp "$@" "$temp" "$host:$rfile"
