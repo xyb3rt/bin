@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -8,12 +9,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-static const char *argv0;
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define ARRLEN(array) (sizeof(array) / sizeof((array)[0]))
+#define xmalloc(size) xrealloc(NULL, (size))
 
-static int isdir(const char *path) {
-	struct stat st;
-	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
-}
+static const char *argv0;
 
 static char *strbsnm(const char *s) {
 	char *t = strrchr((char *)s, '/');
@@ -42,12 +42,67 @@ static void error(int status, int errnum, const char *fmt, ...) {
 	}
 }
 
+static void *xrealloc(void *ptr, size_t size) {
+	ptr = realloc(ptr, size);
+	if (ptr == NULL) {
+		error(EXIT_FAILURE, errno, "realloc");
+	}
+	return ptr;
+}
+
 static char *xstrdup(const char *s) {
 	char *p = strdup(s);
 	if (p == NULL) {
 		error(EXIT_FAILURE, errno, "strdup");
 	}
 	return p;
+}
+
+static char *xasprintf(const char *, ...)
+	__attribute__ ((format (printf, 1, 2)));
+
+static char *xasprintf(const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int n = vsnprintf(NULL, 0, fmt, ap);
+	va_end(ap);
+	if (n < 0 || n == INT_MAX) {
+		error(EXIT_FAILURE, errno, "xasprintf");
+	}
+	char *s = (char *)xmalloc(n + 1);
+	va_start(ap, fmt);
+	vsnprintf(s, n + 1, fmt, ap);
+	va_end(ap);
+	return s;
+}
+
+static char *xgetcwd(void) {
+        char *buf = NULL;
+        size_t size = 1024;
+        for (;;) {
+                buf = (char *)xmalloc(size);
+                if (getcwd(buf, size) != NULL) {
+                        break;
+                } else if (errno != ERANGE) {
+                        error(EXIT_FAILURE, errno, "getcwd");
+                }
+                size *= 2;
+        }
+        return buf;
+}
+
+static char *indir(const char *path, const char *dir) {
+	size_t n = strlen(dir);
+	if (strncmp(path, dir, n) == 0 && path[n] == '/') {
+		for (path = &path[n + 1]; path[0] == '/'; path++);
+		return (char *)path;
+	}
+	return NULL;
+}
+
+static int isdir(const char *path) {
+	struct stat st;
+	return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
 static int call(char *const argv[], int fds[3]) {
