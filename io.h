@@ -3,7 +3,7 @@
 
 typedef char **strvec;
 
-strvec readlines(FILE *f) {
+static strvec readlines(FILE *f) {
 	char *buf = NULL;
 	size_t size = 0;
 	strvec lines = vec_new();
@@ -23,4 +23,3 @@ strvec readlines(FILE *f) {
 	free(buf);
 	return lines;
 }
-

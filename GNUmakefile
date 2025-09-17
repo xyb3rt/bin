@@ -3,6 +3,8 @@ all: darkmon fned timely xyterm yargs
 fned yargs: base.h io.h vec.h
 timely: base.h vec.h
 
+CFLAGS += -O3
+
 darkmon: CFLAGS += $(shell pkg-config --cflags gio-2.0)
 darkmon: LDLIBS += $(shell pkg-config --libs gio-2.0)
 
