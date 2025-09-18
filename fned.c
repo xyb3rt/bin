@@ -119,27 +119,6 @@ int redirected(void) {
 		S_ISREG(st.st_mode) || S_ISSOCK(st.st_mode));
 }
 
-strvec readfile(const char *path) {
-	FILE *f = fopen(path, "r");
-	if (f == NULL) {
-		error(EXIT_FAILURE, errno, "%s", path);
-	}
-	strvec lines = readlines(f);
-	fclose(f);
-	return lines;
-}
-
-void writefile(const char *path, const strvec lines) {
-	FILE *f = fopen(path, "w");
-	if (f == NULL) {
-		error(EXIT_FAILURE, errno, "%s", path);
-	}
-	for (size_t i = 0, n = vec_len(&lines); i < n; i++) {
-		fprintf(f, "%s\n", lines[i]);
-	}
-	fclose(f);
-}
-
 void editfile(char *path) {
 	char *argv[] = {editor, path, NULL};
 	int fds[] = {0, 1, 2};
@@ -194,13 +173,13 @@ int main(int argc, char *argv[]) {
 			vec_push(&sv, argv[i]);
 		}
 	} else if (redirected()) {
-		sv = readlines(stdin);
+		sv = splitlines(xreadall(stdin));
 	} else {
 		sv = ls(".");
 	}
-	writefile(tmp, sv);
+	xwritefile(tmp, sv);
 	editfile(tmp);
-	strvec dv = readfile(tmp);
+	strvec dv = splitlines(xreadfile(tmp));
 	size_t dn = vec_len(&dv);
 	size_t sn = vec_len(&sv);
 	int err = 0;

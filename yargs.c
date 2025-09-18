@@ -146,7 +146,7 @@ void handle(fd_set *fds) {
 int main(int argc, char *argv[]) {
 	argv0 = argv[0];
 	signal(SIGCHLD, sigchld);
-	strvec args = readlines(stdin);
+	strvec args = splitlines(xreadall(stdin));
 	size_t spawned = 0;
 	int status = 0;
 	procs = vec_new();
