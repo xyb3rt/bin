@@ -8,7 +8,8 @@ rfile="${rfile#$HOME/}"
 temp="$(mktemp "/tmp/$base.XXXXXXXX")"
 CLEANUP="rm -f '$temp'" . trap.sh
 echo "Download $file"
-scp "$@" "$host:$rfile" "$temp"
+scp "$@" "$host:$rfile" "$temp" && r=0 || r=$?
+[ $r -le 1 ]
 hash="$(sha512sum "$temp")"
 if [ -n "$ACMEVIMPORT" -a -e "$file" ]; then
 	avim -o "$file"
