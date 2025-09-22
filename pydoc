@@ -1,0 +1,4 @@
+#!/bin/sh -e
+s="$1"
+shift
+xdg-open "https://docs.python.org/3/search.html?q=$s" >/dev/null 2>&1 &
