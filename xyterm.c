@@ -161,7 +161,12 @@ static void new_window(GApplication *app, GApplicationCommandLine *cmdline) {
 	vte_terminal_set_cursor_blink_mode(term, VTE_CURSOR_BLINK_OFF);
 	vte_terminal_set_mouse_autohide(term, TRUE);
 	if (acme) {
-		vte_terminal_set_size(term, 100, 60);
+		int w = 0, h = 0;
+		const char *size = getenv("ACMEWINSIZE");
+		if (size != NULL) {
+			sscanf(size, "%dx%d", &w, &h);
+		}
+		vte_terminal_set_size(term, w > 0 ? w : 100, h > 0 ? h : 60);
 		vte_terminal_set_scrollback_lines(term, 0);
 	}
 	set_colors(term);
