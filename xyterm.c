@@ -35,13 +35,6 @@ static void done(VteTerminal *term, GApplicationCommandLine *cmdline,
 	gtk_window_close(win);
 }
 
-static void resize(GtkWindow *win, VteTerminal *term, int dcol, int drow) {
-	int cols = vte_terminal_get_column_count(term) + dcol;
-	int rows = vte_terminal_get_row_count(term) + drow;
-	gtk_window_set_default_size(win, -1, -1);
-	vte_terminal_set_size(term, cols, rows);
-}
-
 static void set_colors(VteTerminal *term) {
 	GdkRGBA bg, fg;
 	gdk_rgba_parse(&bg, dark ? "#111111" : "#ffffdd");
@@ -81,22 +74,12 @@ static gboolean on_key(GtkEventController *controller, guint key, guint code,
 		vte_terminal_copy_clipboard_format(term, VTE_FORMAT_TEXT);
 	} else if (key == GDK_KEY_V && (mod & GDK_SHIFT_MASK)) {
 		vte_terminal_paste_clipboard(term);
-	} else if (key == GDK_KEY_Up) {
-		resize(win, term, 0, (mod & GDK_SHIFT_MASK) ? -5 : -1);
-	} else if (key == GDK_KEY_Down) {
-		resize(win, term, 0, (mod & GDK_SHIFT_MASK) ? 5 : 1);
-	} else if (key == GDK_KEY_Left) {
-		resize(win, term, (mod & GDK_SHIFT_MASK) ? -10 : -1, 0);
-	} else if (key == GDK_KEY_Right) {
-		resize(win, term, (mod & GDK_SHIFT_MASK) ? 10 : 1, 0);
 	} else if (key == GDK_KEY_0) {
-		gtk_window_set_default_size(win, -1, -1);
 		vte_terminal_set_font_scale(term, 1.0);
 	} else if (key == GDK_KEY_minus) {
 		gdouble scale = vte_terminal_get_font_scale(term);
 		for (size_t i = G_N_ELEMENTS(zooms); i > 0; i--) {
 			if (scale - zooms[i-1] > 1e-6) {
-				gtk_window_set_default_size(win, -1, -1);
 				vte_terminal_set_font_scale(term, zooms[i-1]);
 				break;
 			}
@@ -105,7 +88,6 @@ static gboolean on_key(GtkEventController *controller, guint key, guint code,
 		gdouble scale = vte_terminal_get_font_scale(term);
 		for (size_t i = 0; i < G_N_ELEMENTS(zooms); i++) {
 			if (zooms[i] - scale > 1e-6) {
-				gtk_window_set_default_size(win, -1, -1);
 				vte_terminal_set_font_scale(term, zooms[i]);
 				break;
 			}
