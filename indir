@@ -1,11 +1,10 @@
 #!/bin/sh -e
 set -o pipefail
+owd="$(pwd -L)"
 [ "$1" != '--' ] && cd "$1"
 shift
 dir="$(pwd -L)"
-if [ -n "$ACMEVIMOUTDIR" ]; then
-	[ "$dir" = "$ACMEVIMOUTDIR" ] && dir= || dir="${dir#$ACMEVIMOUTDIR/}"
-fi
+[ "$dir" = "$owd" ] && dir= || dir="${dir#$owd/}"
 "$@" 2>&1 | awk -v "d=${dir:+'}$dir${dir:+'}" '
 	d != "" && NR == 1 { print "Entering directory " d }
 	1 { print; fflush() }
