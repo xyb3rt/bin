@@ -136,6 +136,7 @@ void handle(fd_set *fds) {
 			write_(p);
 		}
 		if (p->fd == -1 && vec_len(&p->buf) == 0 && p->pid == 0) {
+			vec_free(&p->buf);
 			vec_erase(&procs, i, 1);
 		} else {
 			i++;
