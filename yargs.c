@@ -14,6 +14,7 @@ int chld;
 size_t maxprocs = 10;
 size_t numprocs;
 struct proc *procs;
+char *writebuf;
 
 int wait_() {
 	int ret = 0;
@@ -127,19 +128,35 @@ void write_(struct proc *p) {
 }
 
 void handle(fd_set *fds) {
-	for (size_t i = 0; i < vec_len(&procs);) {
+	int writerselected = writebuf != NULL;
+	for (size_t i = 0, nexti; i < vec_len(&procs); i = nexti) {
 		struct proc *p = &procs[i];
+		nexti = i + 1;
 		if (p->fd != -1 && FD_ISSET(p->fd, fds)) {
 			read_(p);
 		}
-		if (i == 0) {
+		if (!writerselected && vec_len(&p->buf) > 0) {
+			/* 
+			 * Select a new writer only once per call. We otherwise
+			 * starve procs with full bufs at the start of the list
+			 * by constantly selecting the next writer behind the
+			 * closed one.
+			 */
+			writebuf = p->buf;
+			writerselected = 1;
+		}
+		if (writebuf == p->buf) {
 			write_(p);
 		}
-		if (p->fd == -1 && vec_len(&p->buf) == 0 && p->pid == 0) {
-			vec_free(&p->buf);
-			vec_erase(&procs, i, 1);
-		} else {
-			i++;
+		if (p->fd == -1 && vec_len(&p->buf) == 0) {
+			if (writebuf == p->buf) {
+				writebuf = NULL;
+			}
+			if (p->pid == 0) {
+				vec_free(&p->buf);
+				vec_erase(&procs, i, 1);
+				nexti = i;
+			}
 		}
 	}
 }
